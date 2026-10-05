@@ -1,0 +1,124 @@
+/* ============================================
+   DataLife — Diário: Vícios
+   Tom calmo: acento e verde de conquista, nada de vermelho.
+   ============================================ */
+
+.vic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+.vic-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+.vic-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.vic-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--tint); color: var(--accent); }
+.vic-nome { font-family: var(--font-display); font-size: 1.05rem; font-weight: 650; letter-spacing: var(--track-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.vic-centro { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.vic-ring { position: relative; width: 148px; height: 148px; }
+.vic-anel { width: 100%; height: 100%; }
+.vic-anel circle { fill: none; stroke-width: 7; }
+.vic-anel-trilho { stroke: var(--track); }
+.vic-anel-feito { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 500ms var(--ease-out); }
+.vic-ring-txt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.vic-num { font-family: var(--font-display); font-size: 2.6rem; font-weight: 700; line-height: 1; letter-spacing: var(--track-display); font-variant-numeric: proportional-nums; }
+.vic-un { margin-top: 4px; max-width: 11ch; font-size: 0.75rem; line-height: 1.3; color: var(--text-muted); }
+.vic-prox { font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+.vic-prox strong { color: var(--text); font-weight: 600; }
+
+.vic-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vic-stats div { padding: 10px; border-radius: calc(var(--radius) - 2px); background: var(--bg-input); min-width: 0; }
+.vic-stats dt { font-size: 0.7rem; color: var(--text-muted); }
+.vic-stats dd { margin-top: 2px; font-size: 0.92rem; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.vic-motivo { display: flex; gap: 8px; align-items: flex-start; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
+.vic-motivo svg { flex-shrink: 0; margin-top: 3px; color: var(--accent); }
+.vic-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+.vic-acoes .btn { justify-content: center; gap: 6px; }
+.vic-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 0.72rem; font-weight: 700; }
+
+.vic-arquivo { margin-top: 20px; font-size: 0.85rem; }
+.vic-arquivo summary { cursor: pointer; color: var(--text-muted); }
+.vic-arquivo ul { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.vic-apoio { display: flex; gap: 8px; max-width: 72ch; margin-top: 28px; font-size: 0.78rem; line-height: 1.55; color: var(--text-dim); }
+.vic-apoio svg { flex-shrink: 0; margin-top: 2px; }
+.vic-carregando { height: 320px; border-radius: var(--radius); background: var(--bg-raised); border: 1px solid var(--line); }
+@media (hover: hover) and (pointer: fine) {
+  .vic-card:hover { border-color: var(--p-300); }
+}
+
+/* ---------- Formulário ---------- */
+.tipo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#vic-dialog .tipo-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+  border: 1px solid var(--line-strong); border-radius: 999px; font-size: 0.8rem; color: var(--text-muted);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+#vic-dialog .tipo-chip[aria-checked="true"] { border-color: var(--accent); background: var(--tint); color: var(--text); font-weight: 600; }
+#vic-dialog fieldset { border: none; padding: 0; margin: 0; min-width: 0; }
+.field-hint { margin: -2px 0 8px; font-size: 0.78rem; color: var(--text-dim); line-height: 1.45; }
+.planos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.plano-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.plano-row label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.plano-row label span { font-size: 0.72rem; font-weight: 600; color: var(--accent); }
+.plano-row .icon-btn { margin-bottom: 4px; }
+
+/* ---------- Detalhe ---------- */
+#vdet-dialog .det-body { padding: 0 24px 16px; overflow-y: auto; }
+.vdet-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.vdet-kpis div { padding: 12px; border-radius: var(--radius); background: var(--bg-input); min-width: 0; }
+.vdet-kpis dt { font-size: 0.72rem; color: var(--text-muted); }
+.vdet-kpis dd { margin-top: 2px; font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+.vdet-kpis dd span { font-family: var(--font); font-size: 0.72rem; font-weight: 400; color: var(--text-muted); }
+.vdet-sec { padding: 16px 0; border-top: 1px solid var(--line); }
+.vdet-sec:first-of-type { border-top: none; }
+.vdet-sec h3 { margin-bottom: 10px; font-size: 0.9rem; font-weight: 650; }
+.vdet-sec h3 .num { font-weight: 500; }
+.vdet-sec > p { font-size: 0.85rem; line-height: 1.55; }
+.vdet-dica { margin-top: 10px; font-size: 0.78rem !important; color: var(--text-dim); }
+
+.motivos { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.motivos li { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; line-height: 1.5; }
+.motivos svg { flex-shrink: 0; margin-top: 4px; color: var(--accent); }
+.planos-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.planos-lista li { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-input); font-size: 0.85rem; line-height: 1.45; }
+.planos-lista em { font-style: normal; font-weight: 700; color: var(--accent); }
+
+.marcos { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.marcos li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border: 1px dashed var(--line-strong); border-radius: var(--radius); font-size: 0.75rem; color: var(--text-dim); text-align: center; }
+.marcos li.is-feito { border-style: solid; border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 8%, transparent); color: var(--text); }
+.marcos li.is-feito svg { color: var(--ok); }
+.marcos li.is-prox { border-color: var(--accent); color: var(--text-muted); }
+
+.benef { list-style: none; display: flex; flex-direction: column; }
+.benef li { position: relative; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 6px 0 6px 18px; font-size: 0.85rem; line-height: 1.45; color: var(--text-dim); }
+.benef li::before { content: ''; position: absolute; left: 0; top: 12px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--line-strong); }
+.benef li.is-feito { color: var(--text); }
+.benef li.is-feito::before { border-color: var(--ok); background: var(--ok); }
+.benef .num { font-weight: 600; }
+
+.vont-barras { display: grid; grid-template-columns: repeat(28, minmax(0, 1fr)); gap: 3px; align-items: end; height: 56px; }
+.vont-barras i { display: block; height: calc(var(--h) * 100%); min-height: 3px; border-radius: 2px; background: var(--accent); opacity: calc(0.35 + var(--h) * 0.65); }
+.vont-barras i[style*="--h:0"] { background: var(--track); opacity: 1; }
+
+.recaidas { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.recaidas li { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.85rem; line-height: 1.45; }
+.recaidas li:last-child { border-bottom: none; }
+.recaidas .num { color: var(--text-muted); padding-top: 1px; }
+
+@media (max-width: 720px) {
+  .vdet-kpis { grid-template-columns: 1fr 1fr; }
+  #vdet-dialog .det-body { padding: 0 16px 12px; }
+  .plano-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .plano-row label:nth-child(2) { grid-row: 2; }
+  .plano-row .icon-btn { grid-row: 1; grid-column: 2; }
+  .planos-lista li { grid-template-columns: 1fr; gap: 2px; }
+  .benef li { grid-template-columns: 1fr; gap: 0; }
+}
+@media (max-width: 720px) { .marcos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .marcos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

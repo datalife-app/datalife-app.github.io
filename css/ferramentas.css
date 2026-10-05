@@ -1,0 +1,239 @@
+/* ============================================
+   DataLife — Páginas de ferramenta (base comum)
+   ============================================
+   Cabeçalho, navegação de período, KPIs, controle segmentado,
+   barra de progresso e erro de carregamento: usados pelo
+   Orçamento, pelo Foco e pelos Objetivos.
+   ============================================ */
+
+.view { padding-bottom: 72px; }
+
+/* ---------- Cabeçalho da página ---------- */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 56px 0 28px;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 10px -4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: color 150ms ease;
+}
+.back-link svg { transition: transform 200ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .back-link:hover { color: var(--text); }
+  .back-link:hover svg { transform: translateX(-2px); }
+}
+
+.page-head h1 {
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: var(--track-display);
+}
+.page-head p { color: var(--text-muted); font-size: 0.9rem; margin-top: 6px; max-width: 52ch; }
+
+.page-head-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.month-nav { display: flex; align-items: center; gap: 2px; height: 38px; }
+.month-label {
+  min-width: 132px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--track-title);
+}
+
+.progress {
+  height: 4px;
+  background: var(--track);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+/* Anima transform (GPU), não width */
+.progress-bar {
+  height: 100%;
+  background: var(--c, var(--accent));
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 280ms var(--ease-out);
+}
+.progress-bar.over { background: var(--danger); }
+
+/* ---------- Erro de carregamento ---------- */
+.load-error { padding: 96px 0; max-width: 52ch; }
+.load-error h1 { font-weight: 700; font-size: 1.75rem; line-height: 1.15; letter-spacing: var(--track-display); }
+.load-error p { color: var(--text-muted); margin-top: 10px; }
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+}
+.segmented button {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
+}
+.segmented button:active { transform: scale(0.97); }
+.segmented [aria-checked="true"] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+/* KPIs: números grandes em sans, dígitos proporcionais (dataviz) */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 22px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.kpi-label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 650;
+  letter-spacing: var(--track-title);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.kpi-sub { font-size: 0.75rem; color: var(--text-muted); }
+.kpi.is-over .kpi-label, .kpi.is-over .kpi-value { color: var(--danger); }
+
+
+/* ---------- Dica dos gráficos ---------- */
+.chart-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 190px;
+  padding: 10px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
+.tip-title { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.8rem; }
+.tip-row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  color: var(--text);
+}
+/* Chave em linha curta (não caixa) */
+.tip-row i { width: 12px; height: 3px; border-radius: 2px; }
+.tip-row b { color: var(--text); font-weight: 500; }
+.tip-total { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line-strong); }
+.tip-total.is-over span, .tip-total.is-over b { color: var(--danger); }
+
+
+/* ---------- Cabeçalho de card com ações ---------- */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.card-head .card-title { margin-bottom: 0; }
+
+/* ---------- Botão de ícone destrutivo ---------- */
+.icon-btn.danger { color: var(--text-dim); }
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn.danger:hover { color: var(--danger); }
+}
+
+/* ---------- Número ---------- */
+.input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.input[type="number"]::-webkit-inner-spin-button,
+.input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ---------- Navegação por ano ---------- */
+.year-nav { display: inline-flex; align-items: center; gap: 2px; }
+.year-label { min-width: 56px; text-align: center; font-weight: 650; font-size: 1.05rem; letter-spacing: var(--track-title); font-variant-numeric: tabular-nums; }
+.year-nav .icon-btn:disabled { opacity: 0.3; }
+
+
+/* ---------- Formulários em diálogo (comum às ferramentas) ---------- */
+.form-body { display: flex; flex-direction: column; gap: 14px; padding: 4px 24px 16px; overflow-y: auto; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.form-wide { grid-column: 1 / -1; }
+.check-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; cursor: pointer; }
+.danger-btn { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+textarea.input { height: auto; padding: 10px 12px; resize: vertical; line-height: 1.5; font: inherit; font-size: 0.875rem; }
+@media (max-width: 640px) {
+  .form-body { padding-left: 16px; padding-right: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Estado vazio (primeiro uso de uma ferramenta) ---------- */
+.vazio {
+  padding: 44px 40px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.vazio-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 16px; border-radius: 12px; background: var(--tint); color: var(--accent); }
+.vazio h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: var(--track-display); line-height: 1.15; text-wrap: balance; }
+.vazio p { margin: 8px 0 20px; max-width: 58ch; color: var(--text-muted); }
+.kpi-texto .kpi-value { font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.kpi.is-ok .kpi-value { color: var(--ok); }
+@media (max-width: 640px) { .vazio { padding: 28px 20px; } }
+.seg-short { display: none; }
+
+@media (max-width: 1000px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .page-head { padding: 32px 0 20px; }
+  .page-head h1 { font-size: 1.75rem; }
+  .page-head-actions { width: 100%; justify-content: space-between; }
+  .segmented { width: 100%; }
+  .segmented button { flex: 1; padding: 0 6px; }
+  .seg-long { display: none; }
+  .seg-short { display: inline; }
+  .kpi { padding: 16px; }
+  .kpi-value { font-size: 1.1rem; }
+  .kpi-sub { font-size: 0.7rem; }
+}
+
+@media (max-width: 380px) {
+  .kpis { grid-template-columns: 1fr; }
+  .container { padding: 0 14px; }
+  .card { padding: 18px 16px; }
+}

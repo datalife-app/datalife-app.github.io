@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Objetivos · DataLife</title>
+  <meta name="description" content="Planeje objetivos de longo prazo: quanto, até quando e quanto guardar por mês.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/objetivos.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-privacy" type="button"></button>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ============ LISTA ============ -->
+    <section id="view-lista" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <a href="hub.html" class="back-link" data-back>Hub</a>
+          <h1>Objetivos</h1>
+          <p>Planos de longo prazo: quanto juntar, até quando e quanto guardar por mês para chegar lá.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-primary" type="button" id="btn-novo"></button>
+        </div>
+      </div>
+      <div id="lista-body"></div>
+    </section>
+
+    <!-- ============ DETALHE ============ -->
+    <section id="view-detalhe" class="view" hidden>
+      <div class="page-head">
+        <div class="obj-head">
+          <a href="#" class="back-link" data-back-list>Objetivos</a>
+          <div class="obj-title">
+            <span class="obj-icon obj-icon-lg" id="det-icon"></span>
+            <div>
+              <h1 id="det-nome"></h1>
+              <p id="det-sub"></p>
+            </div>
+          </div>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="det-editar"></button>
+          <button class="btn btn-ghost btn-sm" type="button" id="det-arquivar"></button>
+          <button class="icon-btn danger" type="button" id="det-excluir" title="Excluir objetivo" aria-label="Excluir objetivo"></button>
+        </div>
+      </div>
+      <div id="detalhe-body"></div>
+    </section>
+  </main>
+
+  <!-- Criar / editar objetivo -->
+  <dialog class="dialog" id="obj-dialog" aria-labelledby="obj-dialog-title">
+    <form method="dialog" class="dialog-inner" id="obj-form" autocomplete="off">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="obj-dialog-title">Novo objetivo</h2>
+          <p class="dialog-sub" id="obj-dialog-sub">Dê um nome, um valor e um prazo. O resto a gente calcula.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="obj-form-body">
+        <label class="field">
+          <span class="field-label">Nome</span>
+          <input class="input" name="nome" placeholder="Ex.: Reserva de emergência" maxlength="60" required>
+        </label>
+        <fieldset class="field">
+          <legend class="field-label">Ícone</legend>
+          <div class="icon-pick" id="icon-pick" role="radiogroup" aria-label="Ícone"></div>
+        </fieldset>
+        <div class="obj-form-grid">
+          <label class="field">
+            <span class="field-label">Quanto quer juntar</span>
+            <input class="input num" name="alvo" inputmode="numeric" placeholder="R$ 0,00" maxlength="22" required>
+          </label>
+          <div class="field">
+            <span class="field-label" id="prazo-label">Até quando</span>
+            <div class="prazo-pick" role="group" aria-labelledby="prazo-label">
+              <select class="input" name="prazoMes" aria-label="Mês do prazo"></select>
+              <select class="input num" name="prazoAno" aria-label="Ano do prazo"></select>
+            </div>
+          </div>
+          <label class="field" id="field-inicial">
+            <span class="field-label">Já tenho guardado</span>
+            <input class="input num" name="inicial" inputmode="numeric" placeholder="R$ 0,00" maxlength="22">
+          </label>
+          <label class="field">
+            <span class="field-label">Rentabilidade esperada (% ao ano)</span>
+            <input class="input num" name="taxa" inputmode="decimal" placeholder="0" maxlength="6">
+          </label>
+          <label class="field obj-form-wide">
+            <span class="field-label">Quanto pretendo guardar por mês</span>
+            <div class="mensal-row">
+              <input class="input num" name="mensal" inputmode="numeric" placeholder="R$ 0,00" maxlength="22">
+              <button class="btn btn-ghost btn-sm" type="button" id="usar-necessario" hidden></button>
+            </div>
+          </label>
+        </div>
+        <p class="obj-preview" id="obj-preview" aria-live="polite"></p>
+        <p class="obj-form-note">Rentabilidade é uma estimativa: use 0 para considerar só o que você guardar. Como referência, aplicações conservadoras costumam render perto da taxa Selic.</p>
+      </div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="obj-submit">Criar objetivo</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/objetivos.js"></script>
+</body>
+
+</html>

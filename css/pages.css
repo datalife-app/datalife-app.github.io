@@ -1,0 +1,193 @@
+/* ============================================
+   DataLife — Login & Hub
+   ============================================ */
+
+/* ---------- Login ---------- */
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.login-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 48px;
+  border-right: 1px solid var(--line);
+}
+
+.login-mark {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: var(--track-title);
+}
+.login-mark em { font-style: normal; color: var(--accent); }
+
+.login-headline {
+  font-weight: 700;
+  font-size: clamp(2.2rem, 4.2vw, 3.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  max-width: 12ch;
+  text-wrap: balance;
+}
+.login-headline em { font-style: normal; color: var(--p-100); }
+
+.login-ramp { display: flex; gap: 0; height: 6px; max-width: 320px; }
+.login-ramp span { flex: 1; }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 48px;
+  max-width: 440px;
+}
+
+.login-form h2 { font-size: 1.1rem; font-weight: 600; }
+.login-form p { color: var(--text-muted); font-size: 0.875rem; margin: 6px 0 28px; }
+
+.btn-google {
+  width: 100%;
+  height: 44px;
+  gap: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-raised);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-google:hover { border-color: var(--p-300); }
+}
+.btn-google svg { width: 18px; height: 18px; }
+
+.login-alert {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  outline: none;
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+  @starting-style { opacity: 0; transform: translateY(-4px); }
+}
+.login-alert strong { display: block; margin-bottom: 4px; font-size: 0.9rem; font-weight: 650; }
+.login-alert p { margin: 0; color: var(--text-muted); }
+.login-alert p + p { margin-top: 6px; }
+.login-alert b { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+
+.login-note {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 760px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-side { border-right: none; border-bottom: 1px solid var(--line); padding: 32px 20px; gap: 48px; }
+  .login-form { padding: 32px 20px; }
+}
+
+/* ---------- Hub ---------- */
+.hub-head { padding: 48px 0 24px; }
+.hub-head h1 {
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 1.08;
+  letter-spacing: var(--track-display);
+}
+.hub-head p { color: var(--text-muted); margin-top: 6px; }
+
+.tool-list { list-style: none; display: flex; flex-direction: column; gap: 28px; margin-bottom: 16px; }
+.tool-group-title { margin-bottom: 10px; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
+.tool-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.tool-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 16px 18px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: border-color 150ms ease, background-color 150ms ease, transform 160ms var(--ease-out);
+}
+.tool-card:active { transform: scale(0.99); }
+.tool-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--tint);
+  color: var(--accent);
+}
+.tool-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tool-text strong { font-size: 1rem; font-weight: 650; letter-spacing: var(--track-title); }
+.tool-text span { font-size: 0.82rem; line-height: 1.4; color: var(--text-muted); text-wrap: pretty; }
+.tool-go { color: var(--text-dim); transition: transform 200ms var(--ease-out), color 150ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .tool-card:hover { border-color: var(--p-300); background: var(--bg-hover); }
+  .tool-card:hover .tool-go { transform: translateX(4px); color: var(--accent); }
+}
+@media (max-width: 720px) {
+  .tool-grid { grid-template-columns: minmax(0, 1fr); }
+  .tool-card { padding: 14px; }
+}
+
+/* ---------- Seus dados (backup): rodapé da página ---------- */
+/* Corpo em coluna: o <main> ocupa a sobra e o rodapé fica sempre embaixo */
+.hub-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.hub-page main { flex: 1 0 auto; width: 100%; padding-bottom: 48px; }
+.site-foot { border-top: 1px solid var(--line); }
+.data-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.data-section h2 { font-size: 0.95rem; font-weight: 600; }
+.data-section p { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; max-width: 52ch; }
+.data-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.import-body { padding: 0 24px 16px; }
+.import-note { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+.import-note strong { color: var(--text); }
+
+/* ---------- Instalar como app ---------- */
+.instalar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 28px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+.instalar[hidden] { display: none; }
+.instalar-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--tint); color: var(--accent); }
+.instalar-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.instalar-txt strong { font-size: 0.92rem; font-weight: 650; }
+.instalar-txt span { font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); }
+.instalar-txt b { color: var(--text); font-weight: 600; }
+.instalar-acoes { display: flex; align-items: center; gap: 4px; }
+@media (max-width: 520px) {
+  .instalar { grid-template-columns: auto minmax(0, 1fr); }
+  .instalar-acoes { grid-column: 1 / -1; justify-content: flex-end; }
+}

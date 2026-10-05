@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- frame-src inclui youtube-nocookie só para o Lo-Fi, que carrega apenas depois do clique em "Tocar" -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Foco · DataLife</title>
+  <meta name="description" content="Tarefas, notas, pomodoro e saúde do dia numa tela só.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/foco.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <nav class="tabs" role="tablist" aria-label="Vistas do Foco">
+        <a href="#day" class="tab" data-tab="dia" role="tab">Meu dia</a>
+        <a href="#board" class="tab" data-tab="quadro" role="tab">Quadro</a>
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      </nav>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-atalhos" type="button" title="Atalhos de teclado" aria-label="Atalhos de teclado"></button>
+        <button class="icon-btn" id="btn-ajustes" type="button" title="Ajustes" aria-label="Ajustes"></button>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-foco">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Foco</h1>
+        <p>O dia numa tela só: tarefas, notas, pomodoro e saúde.</p>
+      </div>
+      <div class="page-head-actions">
+        <div class="month-nav day-nav">
+          <button class="icon-btn" id="day-prev" type="button" aria-label="Dia anterior"></button>
+          <div class="day-label" aria-live="polite">
+            <strong id="day-label"></strong>
+            <span id="day-weekday"></span>
+          </div>
+          <button class="icon-btn" id="day-next" type="button" aria-label="Próximo dia"></button>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-hoje" type="button" hidden>Hoje</button>
+      </div>
+    </div>
+
+    <!-- ============ MEU DIA ============
+         Linhas pareadas por altura: tarefas | pomodoro, notas | calendário, saúde na largura toda -->
+    <section id="view-dia" class="foco-view">
+    <div class="foco-grid" id="foco-grid">
+      <!-- ============ TAREFAS ============ -->
+      <section class="card tarefas-card" aria-labelledby="tarefas-title">
+        <div class="card-head">
+          <div class="card-head-title">
+            <h2 class="card-title" id="tarefas-title">Tarefas</h2>
+            <span class="card-count num" id="tarefas-count"></span>
+          </div>
+          <div class="segmented segmented-sm" id="tarefas-filtro" role="radiogroup" aria-label="Mostrar">
+            <button type="button" role="radio" data-filtro="todas" aria-checked="true">Todas</button>
+            <button type="button" role="radio" data-filtro="pendentes" aria-checked="false">Pendentes</button>
+            <button type="button" role="radio" data-filtro="feitas" aria-checked="false">Feitas</button>
+          </div>
+        </div>
+        <form class="tarefa-form" id="tarefa-form" autocomplete="off">
+          <input class="input" name="texto" id="tarefa-input" placeholder="O que merece sua atenção hoje?" maxlength="280" aria-label="Nova tarefa">
+          <button class="btn btn-primary" type="submit">Adicionar</button>
+        </form>
+        <ul class="tarefa-list" id="tarefa-list"></ul>
+      </section>
+
+      <!-- ============ NOTAS ============ -->
+      <section class="card notas-card" aria-labelledby="notas-title">
+        <div class="card-head">
+          <h2 class="card-title" id="notas-title">Notas</h2>
+          <span class="nota-status" id="nota-status" aria-live="polite"></span>
+        </div>
+        <div class="nota-tabs" id="nota-tabs" role="tablist" aria-label="Notas do dia"></div>
+        <textarea class="nota-text" id="nota-text" spellcheck="true" maxlength="20000"
+          placeholder="Escreva aqui. Use o + para ter mais de uma nota no mesmo dia."></textarea>
+        <p class="nota-hint">Clique duas vezes no nome da nota para renomear.</p>
+      </section>
+      <!-- ============ POMODORO ============ -->
+      <section class="card pomo-card" aria-labelledby="pomo-title">
+        <div class="card-head">
+          <h2 class="card-title" id="pomo-title">Pomodoro</h2>
+          <span class="pomo-today" id="pomo-today"></span>
+        </div>
+        <div class="pomo-dial" id="pomo-dial">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="pomo-track" cx="100" cy="100" r="88"></circle>
+            <circle class="pomo-arc" id="pomo-arc" cx="100" cy="100" r="88" transform="rotate(-90 100 100)"></circle>
+          </svg>
+          <div class="pomo-readout">
+            <span class="pomo-time num" id="pomo-time" role="timer">25:00</span>
+            <span class="pomo-phase" id="pomo-phase">Foco</span>
+          </div>
+        </div>
+        <div class="pomo-cycles" id="pomo-cycles" aria-label="Ciclos até a pausa longa"></div>
+        <div class="pomo-controls">
+          <button class="btn btn-primary pomo-main" id="pomo-toggle" type="button"></button>
+          <button class="icon-btn" id="pomo-skip" type="button" title="Pular para a próxima fase" aria-label="Pular fase"></button>
+          <button class="icon-btn" id="pomo-reset" type="button" title="Recomeçar esta fase" aria-label="Recomeçar fase"></button>
+        </div>
+        <!-- Música para focar: fica junto do cronômetro -->
+        <div class="pomo-lofi" id="lofi"></div>
+      </section>
+
+      <!-- ============ CALENDÁRIO ============ -->
+      <section class="card cal-card" aria-labelledby="cal-title">
+        <div class="card-head">
+          <h2 class="card-title cal-title" id="cal-title"></h2>
+          <div class="cal-nav">
+            <button class="icon-btn" id="cal-prev" type="button" aria-label="Mês anterior"></button>
+            <button class="icon-btn" id="cal-next" type="button" aria-label="Próximo mês"></button>
+          </div>
+        </div>
+        <div class="cal-week" aria-hidden="true">
+          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <ul class="cal-legend" aria-hidden="true">
+          <li><i class="mark mark-pend"></i>Tarefas pendentes</li>
+          <li><i class="mark mark-done"></i>Tudo feito</li>
+          <li><i class="mark mark-note"></i>Nota</li>
+        </ul>
+      </section>
+
+      <!-- ============ SAÚDE ============ -->
+      <section class="card saude-card" aria-labelledby="saude-title">
+        <h2 class="card-title" id="saude-title">Saúde</h2>
+        <div class="saude-grid">
+          <div class="saude-sec" id="agua"></div>
+          <div class="saude-sec" id="refeicoes"></div>
+          <div class="saude-sec" id="exercicio"></div>
+        </div>
+      </section>
+    </div>
+    </section>
+
+    <!-- ============ QUADRO (kanban) ============ -->
+    <section id="view-quadro" class="foco-view" hidden>
+      <div class="kb-bar">
+        <div class="kb-bar-title">
+          <h2 class="section-title">Quadro</h2>
+          <span class="kb-sub" id="quadro-sub"></span>
+        </div>
+        <div class="kb-bar-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="quadro-notas"></button>
+          <div class="segmented segmented-sm" id="quadro-escopo" role="radiogroup" aria-label="Período do quadro">
+            <button type="button" role="radio" data-escopo="dia" aria-checked="true">Dia</button>
+            <button type="button" role="radio" data-escopo="semana" aria-checked="false">Semana</button>
+          </div>
+        </div>
+      </div>
+      <div class="kb-board" id="quadro-board"></div>
+      <p class="kb-hint">Arraste os cartões entre as colunas, ou use as setas. As tarefas são as mesmas de "Meu dia".</p>
+    </section>
+  </main>
+
+  <!-- Ajustes -->
+  <dialog class="dialog dialog-sm" id="ajustes-dialog" aria-labelledby="ajustes-title">
+    <form method="dialog" class="dialog-inner" id="ajustes-form" autocomplete="off">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="ajustes-title">Ajustes</h2>
+          <p class="dialog-sub">Valem para todos os seus aparelhos.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="ajustes-body">
+        <fieldset class="ajustes-group">
+          <legend>Pomodoro</legend>
+          <div class="ajustes-grid">
+            <label class="field"><span class="field-label">Foco (min)</span>
+              <input class="input num" name="foco" type="number" min="1" max="180" step="1" required></label>
+            <label class="field"><span class="field-label">Pausa curta (min)</span>
+              <input class="input num" name="curta" type="number" min="1" max="60" step="1" required></label>
+            <label class="field"><span class="field-label">Pausa longa (min)</span>
+              <input class="input num" name="longa" type="number" min="1" max="60" step="1" required></label>
+            <label class="field"><span class="field-label">Focos até a pausa longa</span>
+              <input class="input num" name="ciclos" type="number" min="1" max="12" step="1" required></label>
+          </div>
+          <label class="check-row"><input type="checkbox" name="som"> Tocar um aviso sonoro ao fim de cada fase</label>
+        </fieldset>
+        <fieldset class="ajustes-group">
+          <legend>Hidratação</legend>
+          <label class="field"><span class="field-label">Seu peso (kg)</span>
+            <input class="input num" name="peso" type="number" min="25" max="250" step="1" placeholder="Ex.: 70"></label>
+          <label class="check-row"><input type="checkbox" name="exercicio"> Pratico exercícios com frequência (+500 ml)</label>
+          <label class="check-row"><input type="checkbox" name="calor"> Moro num lugar muito quente (+500 ml)</label>
+          <p class="ajustes-meta" id="ajustes-meta"></p>
+        </fieldset>
+      </div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="ajustes-submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Atalhos -->
+  <dialog class="dialog dialog-sm" id="atalhos-dialog" aria-labelledby="atalhos-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <h2 class="dialog-title" id="atalhos-title">Atalhos</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <dl class="atalhos-list">
+        <div><dt><kbd>Espaço</kbd></dt><dd>Iniciar ou pausar o pomodoro</dd></div>
+        <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Dia anterior ou próximo</dd></div>
+        <div><dt><kbd>H</kbd></dt><dd>Voltar para hoje</dd></div>
+        <div><dt><kbd>T</kbd></dt><dd>Nova tarefa</dd></div>
+        <div><dt><kbd>N</kbd></dt><dd>Escrever nas notas</dd></div>
+        <div><dt><kbd>A</kbd></dt><dd>Ir para a hidratação</dd></div>
+        <div><dt><kbd>?</kbd></dt><dd>Mostrar esta lista</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Fechar janelas e sair de um campo</dd></div>
+      </dl>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/foco.js"></script>
+</body>
+
+</html>

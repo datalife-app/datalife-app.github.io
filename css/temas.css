@@ -1,0 +1,305 @@
+/* ============================================
+   DataLife — Temas pré-definidos
+   ============================================
+   Cada tema só redefine os tokens de main.css; componentes, gráficos e
+   cores dos leitores leem dos tokens e mudam sozinhos.
+   O padrão (Lavanda) é o :root de main.css. O tema escolhido fica em
+   <html data-theme="..."> (aplicado por js/tema.js antes de pintar).
+
+   Regras usadas em todos:
+   - Rampa --p-100…--p-500: --p-100 é o tom de maior destaque sobre o fundo
+     (o mais claro nos escuros; o mais escuro nos claros), --p-200 o acento
+     (seleção, links, anéis) e --p-500 o mais próximo do fundo.
+   - 60-30-10: fundo neutro (60%), superfícies e linhas (30%), destaque só
+     nos botões de ação (--cta, 10%).
+   - Semânticas iguais em significado: --ok concluído, --warn atenção,
+     --danger só para excluir e estouro real. Tons suaves, sem saturação
+     em áreas grandes.
+   - Contraste: texto ≥ 4,5:1 (inclusive --text-dim), acento como texto ≥ 4,5:1.
+   ============================================ */
+
+/* ================= ESCUROS ================= */
+
+/* ---------- Floresta: verde profundo ---------- */
+:root[data-theme="floresta"] {
+  --p-100: #c8ecd8;
+  --p-200: #8fd1ae;
+  --p-300: #5fa883;
+  --p-400: #3c7a5c;
+  --p-500: #1f4a37;
+
+  --bg: #0c1310;
+  --bg-raised: #111a16;
+  --bg-input: #09100d;
+  --bg-hover: #17231e;
+  --line: #213029;
+  --line-strong: #30443a;
+  --track: #1a2822;
+
+  --text: #e7f2ec;
+  --text-muted: #9cb6aa;
+  --text-dim: #83998f;
+  --on-accent: #0a1a12;
+
+  --ok: #9ee0b8;
+  --warn: #e8c27a;
+  --danger: #f07b6f;
+
+  --cat-1: #e3f6ec;
+  --cat-6: #2a5a44;
+  --serie-ganhos: #a8e0c3;
+  --serie-gastos: #4f9474;
+  --backdrop: rgb(4 10 7 / 0.65);
+}
+
+/* ---------- Oceano: azul-marinho ---------- */
+:root[data-theme="oceano"] {
+  --p-100: #cfe3ff;
+  --p-200: #8ab8f5;
+  --p-300: #5b8fd6;
+  --p-400: #3a66a8;
+  --p-500: #1f3c6b;
+
+  --bg: #0a0f17;
+  --bg-raised: #101724;
+  --bg-input: #070b12;
+  --bg-hover: #162031;
+  --line: #1f2a3c;
+  --line-strong: #2c3b54;
+  --track: #172238;
+
+  --text: #e8eef8;
+  --text-muted: #9aabc6;
+  --text-dim: #8193b0;
+  --on-accent: #07132a;
+
+  --ok: #86d9a8;
+  --warn: #f0c674;
+  --danger: #f2777e;
+
+  --cat-1: #e4efff;
+  --cat-6: #2a4c80;
+  --serie-ganhos: #a9cdfb;
+  --serie-gastos: #4a7cc4;
+  --backdrop: rgb(3 6 12 / 0.65);
+}
+
+/* ---------- Grafite: neutro com âmbar ---------- */
+:root[data-theme="grafite"] {
+  --p-100: #ffe2b0;
+  --p-200: #f2b65a;
+  --p-300: #c98c35;
+  --p-400: #8f5f1f;
+  --p-500: #573810;
+
+  --bg: #111111;
+  --bg-raised: #181818;
+  --bg-input: #0c0c0c;
+  --bg-hover: #212121;
+  --line: #2b2b2b;
+  --line-strong: #3b3b3b;
+  --track: #242424;
+
+  --text: #f2f0ec;
+  --text-muted: #aba59d;
+  --text-dim: #918b83;
+  --on-accent: #1d1305;
+
+  --ok: #8fd6a7;
+  --warn: #f4a96a;   /* laranja, para não se confundir com o âmbar do acento */
+  --danger: #f07a6e;
+
+  --cat-1: #fff1d9;
+  --cat-6: #6a4517;
+  --serie-ganhos: #ffd28a;
+  --serie-gastos: #b07a2c;
+  --backdrop: rgb(0 0 0 / 0.65);
+}
+
+/* ================= CLAROS ================= */
+
+/* Base comum dos temas claros: tinta escura sobre os tons claros, sombras leves */
+:root:is([data-theme="papel"], [data-theme="clareza"], [data-theme="salvia"], [data-theme="caderno"]) {
+  color-scheme: light;
+  --on-accent: #ffffff;
+
+  --leitor-1-ink: #ffffff;
+  --leitor-2-ink: #ffffff;
+  --leitor-3-ink: var(--text);
+  --leitor-4-ink: var(--text);
+  --leitor-5-ink: #ffffff;
+  --leitor-6-ink: var(--text);
+  --leitor-7-ink: #ffffff;
+  --leitor-8-ink: var(--text);
+
+  --shadow-pop: 0 12px 32px rgb(40 35 30 / 0.16);
+  --check-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --dash-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+}
+:root:is([data-theme="papel"], [data-theme="clareza"], [data-theme="salvia"], [data-theme="caderno"]) .toast { box-shadow: var(--shadow-pop); }
+
+/* ---------- Papel: papel quente e terracota ---------- */
+:root[data-theme="papel"] {
+  --p-100: #7c2d12;
+  --p-200: #b4492a;
+  --p-300: #d06d47;
+  --p-400: #e7a688;
+  --p-500: #f4d5c4;
+
+  --bg: #f5f1ea;
+  --bg-raised: #fffdf9;
+  --bg-input: #ffffff;
+  --bg-hover: #efe8dd;
+  --line: #e4dccf;
+  --line-strong: #cfc4b2;
+  --track: #ebe3d6;
+
+  --text: #241f1a;
+  --text-muted: #5f574e;
+  --text-dim: #74695d;
+
+  --ok: #3c7a4f;
+  --warn: #a8650f;
+  --danger: #b3261e;
+
+  --cat-1: #7c2d12;
+  --cat-6: #edbfa5;
+  --serie-ganhos: #8f3a1c;
+  --serie-gastos: #e0956f;
+  --backdrop: rgb(60 45 30 / 0.35);
+}
+
+/* ---------- Clareza: foco e eficiência (claro, azul) ----------
+   Primária azul para seleção e links; o coral fica só nos botões de ação. */
+:root[data-theme="clareza"] {
+  --p-100: #1e3a8a;
+  --p-200: #2563eb;
+  --p-300: #60a5fa;
+  --p-400: #bfdbfe;
+  --p-500: #e0eaff;
+
+  --bg: #f8f9fa;
+  --bg-raised: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #eef2f7;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --track: #e8edf4;
+
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #5b6b80;
+
+  --cta: #d42a45;        /* coral da referência (#f43f5e) escurecido: texto branco a 5:1 */
+  --cta-hover: #b91f38;
+  --on-cta: #ffffff;
+
+  --ok: #15803d;
+  --warn: #b45309;
+  --danger: #b42318;
+
+  --cat-1: #1e3a8a;
+  --cat-6: #dbeafe;
+  --serie-ganhos: #1d4ed8;
+  --serie-gastos: #93c5fd;
+  --backdrop: rgb(15 23 42 / 0.35);
+}
+
+/* ---------- Sálvia: calma e clareza (claro, verde sálvia) ----------
+   Sálvia #84a98c nos preenchimentos; como texto, o tom mais escuro da
+   mesma família (#52796f) para dar contraste. Terracota só nas ações. */
+:root[data-theme="salvia"] {
+  --p-100: #2f3e46;
+  --p-200: #52796f;
+  --p-300: #84a98c;
+  --p-400: #cad2c5;
+  --p-500: #e6ebe4;
+
+  --bg: #faf9f6;
+  --bg-raised: #fffefb;
+  --bg-input: #ffffff;
+  --bg-hover: #f1f3ee;
+  --line: #e3e7e1;
+  --line-strong: #cad2c5;
+  --track: #e8ece6;
+
+  --text: #354f52;
+  --text-muted: #52665f;
+  --text-dim: #5f7268;
+
+  --cta: #e07a5f;
+  --cta-hover: #cc6a50;
+  --on-cta: #2b1a14;     /* texto escuro sobre a terracota: 4,5:1 */
+
+  --ok: #3f7d58;
+  --warn: #a8701c;
+  --danger: #b4432e;
+
+  --cat-1: #2f3e46;
+  --cat-6: #b7c4b5;
+  --serie-ganhos: #52796f;
+  --serie-gastos: #e0a28f;
+  --backdrop: rgb(53 79 82 / 0.3);
+}
+
+/* ---------- Caderno: estética "notepad" (papel amarelado, grafite e marca-texto) ----------
+   O mostarda é o marca-texto: fundos de destaque e seleção (com texto grafite).
+   Como texto e linhas de foco, um mostarda escuro legível (#8a6200). */
+:root[data-theme="caderno"] {
+  --p-100: #5c4300;
+  --p-200: #8a6200;
+  --p-300: #c9962b;
+  --p-400: #f2d58a;
+  --p-500: #fff1c7;
+
+  --bg: #fdfbf7;
+  --bg-raised: #fffefb;
+  --bg-input: #ffffff;
+  --bg-hover: #f5f1e8;
+  --line: #e6e1d8;
+  --line-strong: #d6cfc2;
+  --track: #efeae0;
+
+  --text: #4a4a4a;
+  --text-muted: #66625c;
+  --text-dim: #736e67;
+
+  --cta: #ffd166;
+  --cta-hover: #f7c346;
+  --on-cta: #4a4a4a;     /* grafite sobre o mostarda: 6:1 */
+  --tint: color-mix(in srgb, #ffd166 40%, transparent);   /* marca-texto */
+  --tint-strong: color-mix(in srgb, #ffd166 60%, transparent);
+
+  --ok: #3f7a4a;
+  --warn: #a8650f;
+  --danger: #b3261e;
+
+  --cat-1: #5c4300;
+  --cat-6: #f2d58a;
+  --serie-ganhos: #8a6200;
+  --serie-gastos: #e6b84a;
+  --backdrop: rgb(74 74 74 / 0.3);
+}
+:root[data-theme="caderno"] ::selection { background: #ffd166; color: #4a4a4a; }
+
+/* Troca de tema: as cores fazem a transição juntas (curta, sem mexer em layout) */
+.tema-mudando, .tema-mudando * {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, fill 200ms ease, stroke 200ms ease !important;
+}
+
+/* ---------- Seletor de tema ---------- */
+.tema-pop { min-width: 240px; max-height: none; }
+.tema-grupo { padding: 8px 10px 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-dim); }
+.tema-opt { gap: 12px; justify-content: flex-start; min-height: 40px; }
+.tema-opt .tema-nome { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+.tema-opt .tema-nome small { font-size: 0.72rem; font-weight: 400; color: var(--text-muted); }
+.tema-swatch {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 6px;
+  background: var(--sw-bg);
+  box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.35);
+}
+.tema-swatch i { width: 10px; height: 14px; border-radius: 2px; }

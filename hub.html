@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Hub · DataLife</title>
+  <meta name="description" content="Hub do DataLife: orçamento, foco, objetivos e livros.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+
+<body class="is-loading hub-page">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <div class="user-chip"><span class="user-name"></span></div>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hub-head">
+      <h1>Hub</h1>
+      <p>Dinheiro, rotina e você: o que você decide hoje, anotado.</p>
+    </section>
+    <aside class="instalar" id="instalar" hidden></aside>
+    <ul class="tool-list" id="tool-list"></ul>
+  </main>
+
+  <footer class="site-foot" aria-labelledby="data-title">
+    <div class="container data-section">
+      <div>
+        <h2 id="data-title">Seus dados</h2>
+        <p>Guarde uma cópia de tudo de vez em quando. O plano gratuito do Firebase não faz backup automático.</p>
+      </div>
+      <div class="data-actions">
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-export-json"></button>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-export-csv"></button>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-import"></button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Confirmação de importação -->
+  <dialog class="dialog dialog-sm" id="import-dialog" aria-labelledby="import-title">
+    <form method="dialog" class="dialog-inner" id="import-form">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="import-title">Importar backup</h2>
+          <p class="dialog-sub" id="import-sub"></p>
+        </div>
+      </header>
+      <div class="import-body">
+        <ul class="import-facts" id="import-facts"></ul>
+        <p class="import-note">Lançamentos, tarefas, notas, movimentações, livros e dias do Diário são <strong>somados</strong> aos atuais (os que já existem não duplicam).
+          A renda só é preenchida em meses vazios. Metas, gastos fixos e ajustes do Foco são <strong>substituídos</strong>.</p>
+      </div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="import-submit">Importar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/hub.js"></script>
+</body>
+
+</html>

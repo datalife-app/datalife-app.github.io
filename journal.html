@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Diário · DataLife</title>
+  <meta name="description" content="Diário do dia a dia: texto, humor, atividades, gratidão e o ano em pixels.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/diario.css">
+  <link rel="stylesheet" href="css/vicios.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <nav class="tabs" role="tablist" aria-label="Vistas do Diário">
+        <a href="#entries" class="tab" data-tab="diario" role="tab">Entradas</a>
+        <a href="#habits" class="tab" data-tab="vicios" role="tab">Vícios</a>
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      </nav>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-privacy" type="button"></button>
+        <button class="icon-btn" id="btn-cofre" type="button" title="Cadeado do Diário" aria-label="Cadeado do Diário"></button>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-diario" hidden>
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Diário</h1>
+        <p>O seu dia a dia, em palavras. Só você lê.</p>
+      </div>
+      <div class="page-head-actions">
+        <label class="search-field">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input class="input" type="search" id="busca" placeholder="Buscar no diário" aria-label="Buscar no diário" autocomplete="off"
+            role="combobox" aria-expanded="false" aria-controls="busca-pop" aria-autocomplete="list">
+        </label>
+        <div class="month-nav day-nav">
+          <button class="icon-btn" id="day-prev" type="button" aria-label="Dia anterior"></button>
+          <div class="day-label" aria-live="polite">
+            <strong id="day-label"></strong>
+            <span id="day-weekday"></span>
+          </div>
+          <button class="icon-btn" id="day-next" type="button" aria-label="Próximo dia"></button>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-hoje" type="button" hidden>Hoje</button>
+      </div>
+    </div>
+
+    <div class="diario-grid" id="diario-grid">
+      <!-- ============ ENTRADA ============ -->
+      <section class="card entrada-card" aria-labelledby="entrada-title">
+        <div class="card-head">
+          <h2 class="card-title" id="entrada-title">Entrada</h2>
+          <span class="entrada-status" id="entrada-status" aria-live="polite"></span>
+        </div>
+        <div class="pergunta">
+          <p id="pergunta"></p>
+          <button type="button" class="link-btn" id="outra-pergunta">Outra pergunta</button>
+        </div>
+        <textarea class="diario-text" id="texto" maxlength="20000" spellcheck="true" aria-labelledby="pergunta"></textarea>
+        <div class="entrada-foot"><span id="palavras" class="num"></span></div>
+
+        <fieldset class="gratidao">
+          <legend>Três coisas boas de hoje</legend>
+          <ol>
+            <li><input class="input diario-priv" name="g0" maxlength="200" placeholder="Algo pelo que você é grato" aria-label="Coisa boa 1"></li>
+            <li><input class="input diario-priv" name="g1" maxlength="200" placeholder="Algo que deu certo" aria-label="Coisa boa 2"></li>
+            <li><input class="input diario-priv" name="g2" maxlength="200" placeholder="Alguém que fez diferença" aria-label="Coisa boa 3"></li>
+          </ol>
+        </fieldset>
+      </section>
+
+      <!-- ============ HUMOR E ATIVIDADES ============ -->
+      <section class="card humor-card" aria-labelledby="humor-title">
+        <h2 class="card-title" id="humor-title">Como você está?</h2>
+        <div class="humores" id="humores" role="radiogroup" aria-labelledby="humor-title"></div>
+        <h3 class="sub-title">O que teve hoje</h3>
+        <div class="tags-pick" id="tags" role="group" aria-label="Atividades do dia"></div>
+      </section>
+
+      <!-- ============ SEU DIA EM NÚMEROS ============ -->
+      <section class="card contexto-card" aria-labelledby="contexto-title">
+        <h2 class="card-title" id="contexto-title">Seu dia em números</h2>
+        <ul class="contexto" id="contexto"></ul>
+      </section>
+
+      <!-- ============ NESTE DIA ============ -->
+      <section class="card neste-card" aria-labelledby="neste-title">
+        <div class="card-head">
+          <h2 class="card-title" id="neste-title">Neste dia</h2>
+          <span class="sequencia" id="sequencia"></span>
+        </div>
+        <ul class="neste" id="neste"></ul>
+      </section>
+
+      <!-- ============ ANO EM PIXELS ============ -->
+      <section class="card pixels-card" aria-labelledby="pixels-title">
+        <div class="card-head">
+          <h2 class="card-title" id="pixels-title">Seu ano em pixels</h2>
+          <div class="year-nav">
+            <button class="icon-btn" type="button" id="ano-prev" aria-label="Ano anterior"></button>
+            <strong class="year-label" id="ano-label" aria-live="polite"></strong>
+            <button class="icon-btn" type="button" id="ano-next" aria-label="Próximo ano"></button>
+          </div>
+        </div>
+        <div class="pixels-wrap">
+          <div class="pixels" id="pixels"></div>
+          <aside class="pixels-side">
+            <ul class="pixels-legend" id="pixels-legend" aria-label="Legenda"></ul>
+            <dl class="pixels-stats" id="pixels-stats"></dl>
+            <div class="pixels-ativ" id="pixels-ativ"></div>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+
+
+
+  <!-- ============ CADEADO (trancado) ============ -->
+  <main class="container view cofre-tela" id="cofre-tela" hidden>
+    <form class="cofre-box" id="cofre-abrir" autocomplete="off">
+      <span class="cofre-icon" aria-hidden="true"></span>
+      <h1>Diário trancado</h1>
+      <p>O conteúdo está cifrado com a sua senha. Ela não fica salva em lugar nenhum.</p>
+      <input type="text" name="username" autocomplete="username" value="DataLife: cadeado do Diário" hidden>
+      <label class="field"><span class="field-label">Senha do Diário</span>
+        <input class="input" type="password" name="senha" required autocomplete="current-password" minlength="1" maxlength="200"></label>
+      <label class="check-row"><input type="checkbox" name="lembrar"> <span>Lembrar neste aparelho (até você sair da conta)</span></label>
+      <p class="cofre-erro" id="cofre-erro" role="alert" hidden></p>
+      <button class="btn btn-primary" type="submit">Destrancar</button>
+    </form>
+  </main>
+
+  <dialog class="dialog dialog-sm" id="cofre-dialog" aria-labelledby="cofre-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="cofre-title">Cadeado do Diário</h2><p class="dialog-sub" id="cofre-sub"></p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body" id="cofre-body"></div>
+    </div>
+  </dialog>
+
+  <!-- ============ VÍCIOS ============ -->
+  <main class="container view" id="view-vicios" hidden>
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Vícios</h1>
+        <p>O que você está deixando para trás, e como.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-primary btn-sm" id="vic-novo" type="button" hidden></button>
+      </div>
+    </div>
+    <div id="vic-body" aria-live="polite"></div>
+    <p class="vic-apoio" id="vic-apoio"></p>
+  </main>
+
+  <dialog class="dialog" id="vic-dialog" aria-labelledby="vic-title">
+    <form method="dialog" class="dialog-inner" id="vic-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="vic-title">Novo hábito</h2><p class="dialog-sub">Só você vê. Escreva do seu jeito.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">O que você quer deixar</span><input class="input diario-priv" name="nome" maxlength="60" required placeholder="Ex.: Cigarro, rolar o feed antes de dormir"></label>
+        <fieldset class="field">
+          <legend class="field-label">Tipo</legend>
+          <div class="tipo-chips" id="vic-tipos" role="radiogroup" aria-label="Tipo"></div>
+        </fieldset>
+        <div class="form-grid">
+          <label class="field"><span class="field-label">Desde quando (último uso)</span><input class="input" name="inicio" type="date" required></label>
+          <label class="field"><span class="field-label">Gasto por dia (opcional)</span><input class="input num" name="custo" inputmode="numeric" placeholder="R$ 0,00" maxlength="22"></label>
+          <label class="field"><span class="field-label">Tempo por dia, em minutos (opcional)</span><input class="input num" name="minutos" type="number" min="0" max="1440" step="5" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <label class="field"><span class="field-label">Por que parar (um motivo por linha)</span><textarea class="input diario-priv" name="motivos" rows="3" maxlength="900" placeholder="Ex.: Ter fôlego para brincar com meus filhos"></textarea></label>
+        <fieldset class="field">
+          <legend class="field-label">Plano se… então</legend>
+          <p class="field-hint">Quando a vontade aparecer, o que você faz no lugar. Planos concretos funcionam melhor que força de vontade.</p>
+          <div class="planos" id="vic-planos"></div>
+          <button class="link-btn" type="button" id="vic-plano-add"></button>
+        </fieldset>
+      </div>
+      <footer class="dialog-foot">
+        <span></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost btn-sm" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog-sm" id="rec-dialog" aria-labelledby="rec-title">
+    <form method="dialog" class="dialog-inner" id="rec-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="rec-title">Recomeçar</h2><p class="dialog-sub">Uma recaída faz parte do caminho. Os dias livres que você já teve continuam contando.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">Quando</span><input class="input" name="data" type="date" required></label>
+        <label class="field"><span class="field-label">O que aconteceu? (opcional)</span><textarea class="input diario-priv" name="nota" rows="3" maxlength="280" placeholder="Onde estava, como se sentia, o que desencadeou. Isso ajuda a montar o próximo plano."></textarea></label>
+      </div>
+      <footer class="dialog-foot">
+        <span></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost btn-sm" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary btn-sm" type="submit">Recomeçar a contagem</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog-lg" id="vdet-dialog" aria-labelledby="vdet-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="vdet-title"></h2><p class="dialog-sub" id="vdet-sub"></p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="det-body" id="vdet-body"></div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="vdet-excluir">Excluir</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="vdet-arquivar">Arquivar</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="vdet-editar">Editar</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="sp-pop busca-pop" id="busca-pop" role="listbox" aria-label="Resultados da busca" hidden></div>
+
+  <script type="module" src="js/diario.js"></script>
+</body>
+
+</html>

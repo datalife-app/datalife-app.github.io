@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- img-src https: e frame-src youtube-nocookie só aqui: mídia que você cola em cada exercício -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Exercícios · DataLife</title>
+  <meta name="description" content="Exercícios por grupo muscular, com execução, erros comuns e o seu GIF ou vídeo.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/exercicios.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-exercicios">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Exercícios</h1>
+        <p>Escolha o músculo no corpo ou na lista. Em cada exercício, cole o link do GIF ou vídeo que você prefere.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-ghost" type="button" id="btn-proprio"></button>
+      </div>
+    </div>
+
+    <div class="ex-grid">
+      <section class="card mapa-card" aria-labelledby="mapa-title">
+        <div class="card-head">
+          <h2 class="card-title" id="mapa-title">Grupo muscular</h2>
+          <button type="button" class="link-btn" id="mapa-todos" hidden>Ver todos</button>
+        </div>
+        <div class="mapa" id="mapa"></div>
+        <div class="grupos" id="grupos" role="radiogroup" aria-label="Grupo muscular"></div>
+      </section>
+
+      <section class="ex-lista-wrap" aria-labelledby="lista-title">
+        <div class="ex-bar">
+          <h2 class="ex-lista-title" id="lista-title"></h2>
+          <div class="ex-filtros">
+            <label class="search-field"><span class="search-icon" aria-hidden="true"></span>
+              <input class="input" type="search" id="busca" placeholder="Buscar exercício" aria-label="Buscar exercício"></label>
+            <select class="input" id="filtro-eq" aria-label="Equipamento"></select>
+            <button type="button" class="btn btn-ghost btn-sm fav-toggle" id="so-favs" aria-pressed="false"></button>
+          </div>
+        </div>
+        <ul class="ex-lista" id="ex-lista"></ul>
+        <p class="ex-aviso">Orientação geral. Em caso de dor, lesão ou dúvida sobre a carga, procure um profissional de educação física. Para se aprofundar: <a class="link-btn" href="https://www.hipertrofia.org/blog/exercicios-de-musculacao/" target="_blank" rel="noopener noreferrer">Hipertrofia.org</a> · <a class="link-btn" href="https://treinomestre.com.br/melhores-exercicios-musculacao-treino-estudos/" target="_blank" rel="noopener noreferrer">Treino Mestre</a>.</p>
+      </section>
+    </div>
+  </main>
+
+  <!-- Detalhe -->
+  <dialog class="dialog dialog-lg" id="ex-dialog" aria-labelledby="ex-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="ex-title"></h2><p class="dialog-sub" id="ex-sub"></p></div>
+        <div class="ex-head-actions">
+          <button class="icon-btn" type="button" id="ex-fav" aria-pressed="false"></button>
+          <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+        </div>
+      </header>
+      <div class="ex-body" id="ex-body"></div>
+      <footer class="dialog-foot" id="ex-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="ex-excluir" hidden>Excluir exercício</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="ex-editar" hidden>Editar</button>
+          <button class="btn btn-ghost" type="button" data-close>Fechar</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Exercício próprio -->
+  <dialog class="dialog" id="proprio-dialog" aria-labelledby="proprio-title">
+    <form method="dialog" class="dialog-inner" id="proprio-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="proprio-title">Meu exercício</h2><p class="dialog-sub">Um exercício que não está na lista.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">Nome</span><input class="input" name="nome" maxlength="60" required></label>
+        <div class="form-grid">
+          <label class="field"><span class="field-label">Grupo muscular</span><select class="input" name="grupo" aria-label="Grupo muscular"></select></label>
+          <label class="field"><span class="field-label">Equipamento</span><select class="input" name="equipamento" aria-label="Equipamento"></select></label>
+        </div>
+        <label class="field"><span class="field-label">Como fazer (um passo por linha)</span>
+          <textarea class="input" name="passos" rows="5" maxlength="3600"></textarea></label>
+        <label class="field"><span class="field-label">Link do GIF ou vídeo (opcional)</span>
+          <input class="input" name="midia" type="url" maxlength="500" placeholder="https://"></label>
+      </div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/exercicios.js"></script>
+</body>
+
+</html>

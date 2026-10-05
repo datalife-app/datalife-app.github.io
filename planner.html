@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Planejador · DataLife</title>
+  <meta name="description" content="Datas e horários importantes com avisos a 1 mês, 15, 7, 3 e 1 dia e no dia.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/planejador.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-planejador">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Planejador</h1>
+        <p>Datas e horários importantes. O DataLife avisa em todas as páginas a 1 mês, 15 dias, 1 semana, 3 dias, 1 dia e no próprio dia.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-primary" type="button" id="btn-nova"></button>
+      </div>
+    </div>
+
+    <div class="plan-grid">
+      <section class="card cal-card" aria-labelledby="cal-title">
+        <div class="card-head">
+          <h2 class="cal-title" id="cal-title"></h2>
+          <div class="cal-nav">
+            <button class="btn btn-ghost btn-sm" type="button" id="cal-hoje">Hoje</button>
+            <button class="icon-btn" id="cal-prev" type="button" aria-label="Mês anterior"></button>
+            <button class="icon-btn" id="cal-next" type="button" aria-label="Próximo mês"></button>
+          </div>
+        </div>
+        <div class="cal-week" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </section>
+
+      <section class="card prox-card" aria-labelledby="prox-title">
+        <div class="card-head"><h2 class="card-title" id="prox-title">Próximas</h2><span class="card-hint" id="prox-count"></span></div>
+        <ol class="prox-list" id="prox-list"></ol>
+        <details class="passadas" id="passadas" hidden>
+          <summary>Já passaram</summary>
+          <ol class="prox-list is-passadas" id="passadas-list"></ol>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="dialog dialog-sm" id="ev-dialog" aria-labelledby="ev-title">
+    <form method="dialog" class="dialog-inner" id="ev-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="ev-title">Nova data</h2><p class="dialog-sub">Os avisos aparecem sozinhos nos marcos.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">O quê</span>
+          <input class="input" name="titulo" maxlength="80" required placeholder="Ex.: Dentista, Aniversário da Ana, IPVA"></label>
+        <div class="field">
+          <span class="field-label" id="tipo-label">Tipo</span>
+          <div class="tipo-pick" id="tipo-pick" role="radiogroup" aria-labelledby="tipo-label"></div>
+        </div>
+        <div class="form-grid">
+          <label class="field"><span class="field-label">Data</span><input class="input" name="data" type="date" required></label>
+          <div class="field">
+            <span class="field-label" id="hora-label">Horário</span>
+            <div class="hora-pick" role="group" aria-labelledby="hora-label">
+              <select class="input num" name="h" aria-label="Hora"></select>
+              <select class="input num" name="m" aria-label="Minutos"></select>
+            </div>
+          </div>
+        </div>
+        <label class="check-row"><input type="checkbox" name="anual"> Repetir todo ano (aniversários, datas comemorativas)</label>
+        <label class="field"><span class="field-label">Anotação (opcional)</span>
+          <textarea class="input" name="nota" rows="2" maxlength="500" placeholder="Endereço, o que levar, quem avisar"></textarea></label>
+      </div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="ev-excluir">Excluir</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/planejador.js"></script>
+</body>
+
+</html>

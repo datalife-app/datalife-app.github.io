@@ -1,0 +1,26 @@
+{
+  "name": "DataLife",
+  "short_name": "DataLife",
+  "description": "Sua vida em dados: orçamento, contas, foco, objetivos, livros e diário.",
+  "lang": "pt-BR",
+  "id": "./hub.html",
+  "start_url": "./hub.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#110c17",
+  "theme_color": "#110c17",
+  "categories": ["finance", "productivity", "lifestyle"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Orçamento", "url": "./budget.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Pagamentos", "url": "./bills.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Foco", "url": "./focus.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Diário", "url": "./journal.html", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

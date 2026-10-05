@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Orçamento doméstico · DataLife</title>
+  <meta name="description" content="Divida sua renda em metas e acompanhe os gastos de cada mês.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/orcamento.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <nav class="tabs" role="tablist">
+        <a href="#monthly" class="tab" data-tab="orcamento" role="tab"><span class="tab-full">Orçamento doméstico</span><span class="tab-short">Orçamento</span></a>
+        <a href="#targets" class="tab" data-tab="metas" role="tab"><span class="tab-full">Minhas metas</span><span class="tab-short">Metas</span></a>
+        <a href="#overview" class="tab" data-tab="visao" role="tab">Visão geral</a>
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      </nav>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-privacy" type="button"></button>
+        <div class="currency-badge" title="Moeda">
+          <svg class="flag" viewBox="0 0 40 28" aria-hidden="true">
+            <rect width="40" height="28" fill="#229e45" />
+            <path d="M20 3 37 14 20 25 3 14Z" fill="#f8e509" />
+            <circle cx="20" cy="14" r="6.5" fill="#2b49a3" />
+          </svg>
+          BRL
+        </div>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ============ ORÇAMENTO DOMÉSTICO ============ -->
+    <section id="view-orcamento" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <a href="hub.html" class="back-link" data-back>Hub</a>
+          <h1>Orçamento doméstico</h1>
+          <p>Controle seu orçamento doméstico com base em suas próprias metas e rendimentos.</p>
+        </div>
+        <div class="page-head-actions">
+          <div class="month-nav">
+            <button class="icon-btn" id="month-prev" aria-label="Mês anterior"></button>
+            <span class="month-label" id="month-label" aria-live="polite"></span>
+            <button class="icon-btn" id="month-next" aria-label="Próximo mês"></button>
+          </div>
+          <div class="field">
+            <span class="field-label" id="renda-label">Renda do mês</span>
+            <button type="button" class="input renda-btn" id="renda" aria-labelledby="renda-label renda-total">
+              <span class="num" id="renda-total">R$ 0,00</span>
+              <span class="renda-fontes" id="renda-fontes"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview">
+        <div class="card">
+          <h2 class="card-title">Gastos</h2>
+          <div class="gastos-chart" id="gastos-chart"></div>
+          <ul class="legend" id="gastos-legend"></ul>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Resumo</h2>
+          <div class="table-wrap">
+            <table class="resumo-table">
+              <thead>
+                <tr>
+                  <th>Budget</th>
+                  <th>Valor gasto</th>
+                  <th>Devo gastar</th>
+                  <th>Utilizado</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="resumo-body"></tbody>
+            </table>
+          </div>
+          <div class="totals">
+            <div><strong class="num" id="total-gasto"></strong><span>Total gasto</span></div>
+            <div id="restante-box"><strong class="num" id="total-restante"></strong><span id="restante-label">Ainda pode gastar</span></div>
+            <div><strong class="num" id="total-utilizado"></strong><span>Utilizado</span></div>
+          </div>
+        </div>
+
+        <div class="card metas-card">
+          <h2 class="card-title">Metas</h2>
+          <ul class="metas-list" id="metas-list"></ul>
+          <a href="#targets" class="btn btn-ghost">Editar metas</a>
+        </div>
+      </div>
+
+      <div class="rec-banner" id="rec-banner" hidden></div>
+
+      <div class="cat-bar">
+        <div class="cat-bar-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-search" type="button">Buscar</button>
+          <button class="btn btn-ghost btn-sm" id="btn-copy" type="button">Copiar para outro mês</button>
+        </div>
+        <nav class="cat-nav" id="cat-nav" aria-label="Categorias"></nav>
+      </div>
+
+      <div class="card cat-panel">
+        <div class="cat-panel-head">
+          <h2 class="cat-panel-title" id="cat-title"></h2>
+          <div class="cat-stats" id="cat-stats"></div>
+        </div>
+        <div class="progress"><div class="progress-bar" id="cat-progress"></div></div>
+
+        <form class="gasto-form" id="gasto-form" autocomplete="off">
+          <label class="field grow">
+            <span class="field-label">Descrição</span>
+            <input class="input" name="desc" placeholder="Ex.: Aluguel" required maxlength="80">
+          </label>
+          <label class="field">
+            <span class="field-label">Valor</span>
+            <input class="input num" name="valor" inputmode="numeric" placeholder="R$ 0,00" maxlength="22" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Data</span>
+            <input class="input" name="data" type="date" required>
+          </label>
+          <button class="btn btn-primary" type="submit">Adicionar</button>
+          <label class="toggle-chip" title="Lança este gasto automaticamente nos próximos meses">
+            <input type="checkbox" name="repetir">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            Repetir todo mês
+          </label>
+        </form>
+
+        <ul class="gasto-list" id="gasto-list"></ul>
+      </div>
+    </section>
+
+    <!-- ============ MINHAS METAS ============ -->
+    <section id="view-metas" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <a href="hub.html" class="back-link" data-back>Hub</a>
+          <h1>Minhas metas</h1>
+          <p>Defina quanto da sua renda vai para cada categoria. A soma deve fechar em 100%.</p>
+        </div>
+      </div>
+
+      <div class="metas-layout">
+        <div class="card metas-chart-card">
+          <h2 class="card-title">Metas</h2>
+          <div class="metas-chart" id="metas-chart"></div>
+          <p class="metas-status" id="metas-status"></p>
+          <div class="cortes" id="metas-cortes" hidden>
+            <h3 class="cortes-title">Onde reduzir</h3>
+            <ul class="cortes-list" id="cortes-list"></ul>
+            <button class="btn btn-primary btn-sm" type="button" id="btn-cortes">Aplicar sugestão</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sliders" id="sliders"></div>
+          <div class="sliders-foot">
+            <button class="btn btn-ghost" id="btn-reset-metas" type="button">Restaurar padrão</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ============ VISÃO GERAL ============ -->
+    <section id="view-visao" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <a href="hub.html" class="back-link" data-back>Hub</a>
+          <h1>Visão geral</h1>
+          <p id="visao-sub"></p>
+        </div>
+        <div class="visao-controls">
+          <div class="year-nav" id="visao-year" hidden>
+            <button class="icon-btn" type="button" id="visao-year-prev" aria-label="Ano anterior"></button>
+            <strong class="year-label" id="visao-year-label" aria-live="polite"></strong>
+            <button class="icon-btn" type="button" id="visao-year-next" aria-label="Próximo ano"></button>
+          </div>
+          <div class="segmented" id="visao-range" role="radiogroup" aria-label="Período">
+            <button type="button" role="radio" data-range="3" aria-checked="false">3<span class="seg-long"> meses</span><span class="seg-short">m</span></button>
+            <button type="button" role="radio" data-range="6" aria-checked="true">6<span class="seg-long"> meses</span><span class="seg-short">m</span></button>
+            <button type="button" role="radio" data-range="12" aria-checked="false">12<span class="seg-long"> meses</span><span class="seg-short">m</span></button>
+            <button type="button" role="radio" data-range="all" aria-checked="false">Total</button>
+            <button type="button" role="radio" data-range="year" aria-checked="false">Ano</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card visao-empty" id="visao-empty" hidden>
+        <p>Nenhum lançamento neste período. Cadastre a renda e os gastos na aba <a href="#monthly">Orçamento doméstico</a>.</p>
+      </div>
+
+      <div id="visao-body">
+        <div class="kpis" id="visao-kpis"></div>
+
+        <div class="card destaques-card" id="visao-destaques" hidden>
+          <h2 class="card-title">Resumo do ano</h2>
+          <div id="visao-destaques-body"></div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-head">
+            <h2 class="card-title">Ganhos x gastos por mês</h2>
+            <ul class="chart-legend" aria-label="Legenda">
+              <li><span class="key" style="--c:var(--serie-ganhos)"></span>Ganhos</li>
+              <li><span class="key" style="--c:var(--serie-gastos)"></span>Gastos</li>
+            </ul>
+          </div>
+          <div class="bars" id="visao-chart"></div>
+        </div>
+
+        <div class="visao-grid">
+          <div class="card">
+            <h2 class="card-title">Gastos por categoria</h2>
+            <ul class="cat-rows" id="visao-cats"></ul>
+            <p class="cat-rows-note"><span class="cat-goal-key" aria-hidden="true"></span> meta do período (metas atuais × ganhos)</p>
+          </div>
+          <div class="card">
+            <h2 class="card-title">Mês a mês</h2>
+            <div class="table-wrap">
+              <table class="resumo-table visao-table" id="visao-table"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FONTES DE RENDA ============ -->
+  <dialog class="dialog dialog-sm" id="rendas-dialog" aria-labelledby="rendas-title">
+    <form method="dialog" class="dialog-inner" id="rendas-form" autocomplete="off">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="rendas-title">Renda do mês</h2>
+          <p class="dialog-sub" id="rendas-sub"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="rendas-body">
+        <ul class="rendas-list" id="rendas-list"></ul>
+        <div class="rendas-tools">
+          <button class="link-btn" type="button" id="rendas-add">Adicionar fonte</button>
+          <button class="link-btn" type="button" id="rendas-prev">Copiar do mês anterior</button>
+        </div>
+      </div>
+      <footer class="dialog-foot">
+        <span class="copy-summary">Total <strong class="num" id="rendas-total"></strong></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ GASTOS FIXOS PENDENTES ============ -->
+  <dialog class="dialog dialog-sm" id="rec-dialog" aria-labelledby="rec-title">
+    <form method="dialog" class="dialog-inner" id="rec-form">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="rec-title">Gastos fixos</h2>
+          <p class="dialog-sub" id="rec-sub"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="copy-list" id="rec-list"></div>
+      <footer class="dialog-foot">
+        <span class="copy-summary" id="rec-summary"></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="rec-submit">Lançar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ BUSCA ============ -->
+  <dialog class="dialog dialog-lg" id="search-dialog" aria-labelledby="search-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <h2 class="dialog-title" id="search-title">Buscar lançamentos</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="search-filters">
+        <input class="input search-input" id="search-q" type="search" placeholder="Descrição, ex.: uber" autocomplete="off" aria-label="Buscar por descrição">
+        <select class="input" id="search-cat" aria-label="Categoria"></select>
+        <select class="input" id="search-period" aria-label="Período">
+          <option value="12">Últimos 12 meses</option>
+          <option value="year">Este ano</option>
+          <option value="all">Tudo</option>
+        </select>
+      </div>
+      <div class="copy-list search-results" id="search-results" aria-live="polite"></div>
+      <footer class="dialog-foot">
+        <span class="copy-summary" id="search-summary"></span>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- ============ COPIAR GASTOS ============ -->
+  <dialog class="dialog" id="copy-dialog" aria-labelledby="copy-title">
+    <form method="dialog" class="dialog-inner" id="copy-form">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="copy-title">Copiar gastos</h2>
+          <p class="dialog-sub">
+            De <strong id="copy-from"></strong> para
+            <span class="copy-target">
+              <button class="icon-btn" type="button" id="copy-prev" aria-label="Mês de destino anterior"></button>
+              <strong id="copy-to" aria-live="polite"></strong>
+              <button class="icon-btn" type="button" id="copy-next" aria-label="Próximo mês de destino"></button>
+            </span>
+          </p>
+        </div>
+        <button class="icon-btn" type="button" id="copy-close" aria-label="Fechar"></button>
+      </header>
+
+      <div class="copy-toolbar">
+        <button class="link-btn" type="button" id="copy-all">Selecionar todos</button>
+        <button class="link-btn" type="button" id="copy-none">Limpar</button>
+      </div>
+
+      <div class="copy-list" id="copy-list"></div>
+
+      <footer class="dialog-foot">
+        <span class="copy-summary" id="copy-summary"></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" id="copy-cancel">Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="copy-submit">Copiar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/orcamento.js"></script>
+</body>
+
+</html>

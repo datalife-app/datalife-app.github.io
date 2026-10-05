@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Compras conscientes · DataLife</title>
+  <meta name="description" content="Itens que você quer comprar e o histórico de preço, para saber se a oferta é real.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/desejos.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-privacy" type="button"></button>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-desejos">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Compras conscientes</h1>
+        <p>Anote o preço sempre que olhar. Com o histórico, dá para saber se a "promoção" é mesmo abaixo do normal.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-primary" type="button" id="btn-novo"></button>
+      </div>
+    </div>
+    <div id="desejos-body"></div>
+  </main>
+
+  <!-- Novo / editar -->
+  <dialog class="dialog dialog-sm" id="des-dialog" aria-labelledby="des-title">
+    <form method="dialog" class="dialog-inner" id="des-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="des-title">Quero comprar</h2><p class="dialog-sub">O primeiro preço já pode ir junto.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">O que</span><input class="input" name="nome" maxlength="80" required placeholder="Ex.: Notebook, geladeira, tênis de corrida"></label>
+        <label class="field"><span class="field-label">Link do produto (opcional)</span><input class="input" name="link" type="url" maxlength="500" placeholder="https://"></label>
+        <div class="form-grid">
+          <label class="field" id="field-preco"><span class="field-label">Preço de hoje</span><input class="input num" name="preco" inputmode="numeric" placeholder="R$ 0,00" maxlength="22"></label>
+          <label class="field"><span class="field-label">Pago no máximo</span><input class="input num" name="alvo" inputmode="numeric" placeholder="R$ 0,00" maxlength="22"></label>
+          <label class="field form-wide"><span class="field-label">Loja (opcional)</span><input class="input" name="loja" maxlength="40" placeholder="Ex.: site da loja, loja física"></label>
+        </div>
+      </div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Detalhe -->
+  <dialog class="dialog dialog-lg" id="det-dialog" aria-labelledby="det-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="det-title"></h2><p class="dialog-sub" id="det-sub"></p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="det-body" id="det-body"></div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="det-excluir">Excluir</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="det-editar">Editar</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="det-comprei">Comprei</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/desejos.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+/* ============================================
+   DataLife — Planejador
+   ============================================ */
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* ---------- Calendário ---------- */
+.cal-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 650; letter-spacing: var(--track-title); }
+.cal-title span { color: var(--text-muted); font-weight: 500; }
+.cal-nav { display: flex; align-items: center; gap: 4px; }
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-week span { padding: 0 6px 8px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.cal-grid { border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 96px;
+  min-width: 0;
+  padding: 4px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.cal-cell.is-outside { background: color-mix(in srgb, var(--bg) 50%, transparent); }
+.cal-cell.is-outside .cal-num { color: var(--text-dim); }
+.cal-num {
+  align-self: flex-start;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 150ms ease;
+}
+.cal-cell.is-hoje .cal-num { background: var(--accent); color: var(--on-accent); }
+.cal-cell.is-past:not(.is-hoje) .cal-num { color: var(--text-muted); font-weight: 500; }
+.cal-evs { list-style: none; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cal-ev {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--tint);
+  border-left: 2px solid var(--accent);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-ev .num { color: var(--text-muted); flex-shrink: 0; }
+.cal-ev.tipo-aniversario { border-left-color: var(--p-100); }
+.cal-ev.tipo-prazo { border-left-color: var(--warn); }
+.cal-ev.tipo-saude { border-left-color: var(--ok); }
+.cal-mais { font-size: 0.7rem; color: var(--text-muted); padding-left: 6px; }
+@media (hover: hover) and (pointer: fine) {
+  .cal-num:hover { background: var(--bg-hover); }
+  .cal-cell.is-hoje .cal-num:hover { background: var(--accent-strong); }
+  .cal-ev:hover { background: var(--tint-strong); }
+}
+
+/* ---------- Próximas ---------- */
+.prox-card { display: flex; flex-direction: column; }
+.prox-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.cd {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-align: left;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 160ms var(--ease-out);
+}
+.cd:active { transform: scale(0.99); }
+.cd.is-perto { border-color: var(--accent); background: var(--tint); }
+.cd-left { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.cd-num { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; letter-spacing: var(--track-display); font-variant-numeric: proportional-nums; }
+.cd-num.cd-txt { font-size: 0.95rem; letter-spacing: var(--track-title); text-align: center; }
+.cd-un { margin-top: 3px; font-size: 0.72rem; color: var(--text-muted); }
+.cd-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cd-titulo { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cd-titulo svg { flex-shrink: 0; color: var(--accent); }
+.cd-titulo strong { font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-data { font-size: 0.78rem; color: var(--text-muted); }
+.cd.is-passada { opacity: 0.7; }
+
+/* Trilha dos avisos: marcos já alcançados ficam cheios; o atual, em destaque */
+.trilha { list-style: none; display: flex; align-items: center; gap: 0; margin-top: 6px; }
+.trilha li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; }
+.trilha li::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line-strong);
+}
+.trilha li:first-child::before { display: none; }
+.trilha li.is-on::before { background: var(--p-300); }
+.trilha i { position: relative; z-index: 1; width: 8px; height: 8px; border-radius: 50%; background: var(--bg-raised); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.trilha li.is-on i { background: var(--p-300); box-shadow: none; }
+.trilha li.is-atual i { background: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
+.trilha span { font-size: 0.62rem; color: var(--text-dim); }
+.trilha li.is-atual span { color: var(--accent); font-weight: 700; }
+
+.prox-vazio p { font-size: 0.875rem; }
+.prox-vazio .text-muted { margin-top: 4px; font-size: 0.82rem; }
+.passadas { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.passadas summary { cursor: pointer; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px; }
+@media (hover: hover) and (pointer: fine) {
+  .cd:hover { border-color: var(--p-300); background: var(--bg-hover); }
+}
+
+/* ---------- Dialog ---------- */
+.tipo-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.tipo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+.tipo-chip[aria-checked="true"] { border-color: var(--accent); background: var(--tint); color: var(--text); font-weight: 600; }
+.hora-pick { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1000px) {
+  .plan-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .cal-cell { min-height: 54px; padding: 2px; }
+  .cal-week span { padding: 0 2px 6px; text-align: center; font-size: 0.68rem; }
+  /* No celular, cada data vira um ponto (o nome aparece em "Próximas") */
+  .cal-evs { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 3px; }
+  .cal-ev { width: 8px; height: 8px; padding: 0; border: none; border-radius: 50%; background: var(--accent); font-size: 0; }
+  .cal-ev .num { display: none; }
+  .cal-ev.tipo-aniversario { background: var(--p-100); }
+  .cal-ev.tipo-prazo { background: var(--warn); }
+  .cal-ev.tipo-saude { background: var(--ok); }
+  .cal-mais { font-size: 0.6rem; padding: 0; }
+  .cal-num { align-self: center; }
+}

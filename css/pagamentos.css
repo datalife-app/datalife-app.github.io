@@ -1,0 +1,71 @@
+/* ============================================
+   DataLife — Pagamentos
+   ============================================ */
+
+/* ---------- Linha do mês: um traço por dia, marcando os vencimentos ---------- */
+.linha-card { margin: 12px 0 28px; padding: 18px 22px 14px; }
+.linha-mes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; align-items: end; }
+.lm-dia { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.lm-dia i { display: block; width: 100%; height: 6px; border-radius: 3px; background: var(--track); }
+.lm-dia .num { font-size: 0.68rem; color: var(--text-dim); line-height: 1; }
+.lm-dia.has-conta i { height: 18px; }
+.lm-dia.st-paga i { background: var(--ok); }
+.lm-dia.st-proxima i { background: var(--warn); }
+.lm-dia.st-vencida i { background: var(--warn); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bg) 40%, transparent); }
+.lm-dia.st-futura i { background: var(--p-300); }
+.lm-dia.has-conta .num { color: var(--text); font-weight: 600; }
+.lm-dia.is-hoje .num { color: var(--accent); font-weight: 700; }
+.lm-dia.is-hoje i { outline: 1.5px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Grupos e contas ---------- */
+.grupo { margin-bottom: 24px; }
+.grupo-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; font-size: 0.9rem; font-weight: 650; }
+.grupo-title .num { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); }
+.grupo-vencida .grupo-title { color: var(--warn); }
+.contas { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.conta {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+.conta.st-vencida, .conta.st-proxima { border-left-color: var(--warn); }
+.conta.st-paga { border-left-color: var(--ok); }
+.conta-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  padding: 6px 0;
+  border-radius: 8px;
+  background: var(--bg-input);
+}
+.conta-data strong { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; }
+.conta-data span { font-size: 0.7rem; color: var(--text-muted); text-transform: lowercase; }
+.conta-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.conta-info strong { font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conta-sub { font-size: 0.78rem; color: var(--text-muted); }
+.st-vencida .conta-sub, .st-proxima .conta-sub { color: var(--warn); font-weight: 600; }
+.conta-valor { font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+button.conta-valor { border-bottom: 1px dashed var(--line-strong); }
+.st-paga .conta-info strong { color: var(--text-muted); }
+.conta-ok { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+@media (hover: hover) and (pointer: fine) {
+  .conta-info:hover strong { color: var(--accent-strong); }
+}
+
+@media (max-width: 640px) {
+  .linha-card { padding: 14px 12px 10px; }
+  .linha-mes { gap: 2px; }
+  .lm-dia .num { font-size: 0.6rem; }
+  .conta { grid-template-columns: 46px minmax(0, 1fr) auto; grid-template-areas: "data info info" "data valor acao"; gap: 6px 12px; }
+  .conta-data { grid-area: data; }
+  .conta-info { grid-area: info; }
+  .conta-valor { grid-area: valor; }
+  .conta > .btn, .conta-ok { grid-area: acao; justify-self: end; }
+}

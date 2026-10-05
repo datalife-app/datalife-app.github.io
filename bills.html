@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pagamentos · DataLife</title>
+  <meta name="description" content="Contas do mês com vencimento, marcação de pagas e aviso antes de vencer.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/pagamentos.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-privacy" type="button"></button>
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-pagamentos">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Pagamentos</h1>
+        <p>As contas do mês com vencimento. Marque o que já pagou; o DataLife avisa antes de vencer.</p>
+      </div>
+      <div class="page-head-actions">
+        <div class="month-nav">
+          <button class="icon-btn" id="mes-prev" type="button" aria-label="Mês anterior"></button>
+          <span class="month-label" id="mes-label" aria-live="polite"></span>
+          <button class="icon-btn" id="mes-next" type="button" aria-label="Próximo mês"></button>
+        </div>
+        <button class="btn btn-primary" type="button" id="btn-nova"></button>
+      </div>
+    </div>
+    <div id="pag-body"></div>
+  </main>
+
+  <!-- Conta -->
+  <dialog class="dialog dialog-sm" id="conta-dialog" aria-labelledby="conta-title">
+    <form method="dialog" class="dialog-inner" id="conta-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="conta-title">Nova conta</h2><p class="dialog-sub" id="conta-sub">Uma conta que se repete todo mês.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label">Nome</span>
+          <input class="input" name="nome" maxlength="60" required placeholder="Ex.: Energia, Internet, Aluguel"></label>
+        <div class="form-grid">
+          <label class="field"><span class="field-label">Valor (estimado)</span>
+            <input class="input num" name="valor" inputmode="numeric" placeholder="R$ 0,00" maxlength="22"></label>
+          <label class="field"><span class="field-label">Vence todo dia</span>
+            <select class="input num" name="dia" aria-label="Dia do vencimento"></select></label>
+          <label class="field form-wide"><span class="field-label">Avisar com antecedência de</span>
+            <select class="input" name="aviso" aria-label="Antecedência do aviso"></select></label>
+        </div>
+        <label class="check-row"><input type="checkbox" name="lancar"> Ao marcar como paga, lançar no Orçamento</label>
+        <label class="field" id="field-cat"><span class="field-label">Categoria no Orçamento</span>
+          <select class="input" name="cat" aria-label="Categoria no Orçamento"></select></label>
+      </div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="conta-excluir">Excluir conta</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Pagamento (valor e data efetivos) -->
+  <dialog class="dialog dialog-sm" id="pago-dialog" aria-labelledby="pago-title">
+    <form method="dialog" class="dialog-inner" id="pago-form" autocomplete="off">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="pago-title">Pagamento</h2><p class="dialog-sub" id="pago-sub"></p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <div class="form-grid">
+          <label class="field"><span class="field-label">Valor pago</span>
+            <input class="input num" name="valor" inputmode="numeric" placeholder="R$ 0,00" maxlength="22" required></label>
+          <label class="field"><span class="field-label">Pago em</span>
+            <input class="input" name="em" type="date" required></label>
+        </div>
+      </div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm" type="button" id="pago-desfazer">Desmarcar como paga</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/pagamentos.js"></script>
+</body>
+
+</html>

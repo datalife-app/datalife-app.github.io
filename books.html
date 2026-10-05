@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Livros · DataLife</title>
+  <meta name="description" content="Estante de livros: lendo agora, lidos, quero ler, desafio do ano e citações.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#110c17">
+  <meta name="apple-mobile-web-app-title" content="DataLife">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="js/tema.js"></script>
+  <link rel="preload" href="assets/fonts/red-hat-text-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/temas.css">
+  <link rel="stylesheet" href="css/ferramentas.css">
+  <link rel="stylesheet" href="css/livros.css">
+</head>
+
+<body class="is-loading">
+  <div id="local-banner"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <div class="topbar-right">
+        <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
+        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container view" id="view-livros">
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Livros</h1>
+        <p>O que você está lendo, o que já leu e o que vem depois.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-ghost" type="button" id="btn-importar"></button>
+        <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
+        <button class="btn btn-primary" type="button" id="btn-novo"></button>
+      </div>
+    </div>
+
+    <figure class="citacao" id="citacao" hidden></figure>
+
+    <div class="livros-top">
+      <section class="card lendo-card" aria-labelledby="lendo-title">
+        <div class="card-head"><h2 class="card-title" id="lendo-title">Lendo agora</h2></div>
+        <ul class="lendo-list" id="lendo"></ul>
+      </section>
+      <section class="card desafio-card" aria-labelledby="desafio-title" id="desafio"></section>
+    </div>
+
+    <div class="livros-bar">
+      <div class="segmented" id="vista" role="radiogroup" aria-label="Vista">
+        <button type="button" role="radio" data-vista="estante" aria-checked="true">Estante</button>
+        <button type="button" role="radio" data-vista="lista" aria-checked="false">Lista</button>
+      </div>
+      <div class="livros-filtros">
+        <label class="search-field">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input class="input" type="search" id="busca" placeholder="Buscar título ou autor" aria-label="Buscar título ou autor">
+        </label>
+        <select class="input" id="filtro-leitor" aria-label="Leitor"></select>
+        <select class="input" id="filtro-status" aria-label="Situação">
+          <option value="">Todas as situações</option>
+          <option value="lido">Lidos</option>
+          <option value="lendo">Lendo</option>
+          <option value="quero">Quero ler</option>
+          <option value="abandonado">Abandonados</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="livros-view"></div>
+
+    <section class="card stats-card" aria-labelledby="stats-title">
+      <div class="card-head">
+        <h2 class="card-title" id="stats-title">Seu ano de leitura</h2>
+        <div class="year-nav">
+          <button class="icon-btn" type="button" id="stats-prev" aria-label="Ano anterior"></button>
+          <strong class="year-label" id="stats-ano" aria-live="polite"></strong>
+          <button class="icon-btn" type="button" id="stats-next" aria-label="Próximo ano"></button>
+        </div>
+      </div>
+      <div id="stats"></div>
+    </section>
+  </main>
+
+  <!-- Livro: criar / editar -->
+  <dialog class="dialog dialog-lg" id="livro-dialog" aria-labelledby="livro-title">
+    <form method="dialog" class="dialog-inner" id="livro-form" autocomplete="off">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="livro-title">Novo livro</h2>
+          <p class="dialog-sub" id="livro-sub"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="livro-body">
+        <div class="livro-grid">
+          <label class="field livro-wide">
+            <span class="field-label">Título</span>
+            <input class="input" name="titulo" maxlength="200" required placeholder="Ex.: O príncipe">
+          </label>
+          <label class="field">
+            <span class="field-label">Autor</span>
+            <input class="input" name="autor" maxlength="120" placeholder="Ex.: Maquiavel">
+          </label>
+          <label class="field">
+            <span class="field-label">Gênero</span>
+            <input class="input" name="genero" maxlength="40" placeholder="Ex.: Filosofia">
+          </label>
+
+          <div class="field livro-wide">
+            <span class="field-label" id="leitores-label">Quem leu</span>
+            <div class="leitores-pick" id="leitores-pick" role="group" aria-labelledby="leitores-label"></div>
+          </div>
+
+          <div class="field livro-wide">
+            <span class="field-label" id="status-label">Situação</span>
+            <div class="segmented" id="status-pick" role="radiogroup" aria-labelledby="status-label"></div>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Início da leitura</span>
+            <input class="input" name="inicio" type="date">
+          </label>
+          <label class="field" id="field-fim">
+            <span class="field-label">Fim da leitura</span>
+            <input class="input" name="fim" type="date">
+          </label>
+          <label class="field">
+            <span class="field-label">Páginas</span>
+            <input class="input num" name="paginas" type="number" min="1" max="20000" placeholder="Ex.: 160">
+          </label>
+          <label class="field" id="field-pagina">
+            <span class="field-label">Parei na página</span>
+            <input class="input num" name="pagina" type="number" min="0" max="20000" placeholder="0">
+          </label>
+
+          <div class="field livro-wide">
+            <span class="field-label" id="nota-label">Avaliação</span>
+            <div class="stars-pick" id="stars-pick" role="radiogroup" aria-labelledby="nota-label"></div>
+          </div>
+
+          <label class="field livro-wide">
+            <span class="field-label">Comentários</span>
+            <textarea class="input livro-text" name="comentario" maxlength="4000" rows="3" placeholder="O que ficou deste livro?"></textarea>
+          </label>
+        </div>
+
+        <section class="cit-sec" aria-labelledby="cit-title">
+          <h3 class="cit-title" id="cit-title">Citações</h3>
+          <ul class="cit-list" id="cit-list"></ul>
+          <div class="cit-add">
+            <textarea class="input livro-text" id="cit-texto" maxlength="1000" rows="2" placeholder="Um trecho que valeu guardar" aria-label="Nova citação"></textarea>
+            <input class="input num" id="cit-pagina" type="number" min="1" max="20000" placeholder="Pág." aria-label="Página da citação">
+            <button class="btn btn-ghost btn-sm" type="button" id="cit-add">Guardar citação</button>
+          </div>
+        </section>
+      </div>
+      <footer class="dialog-foot">
+        <button class="btn btn-ghost btn-sm danger-btn" type="button" id="livro-excluir">Excluir livro</button>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="livro-submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Importar do Notion -->
+  <dialog class="dialog" id="csv-dialog" aria-labelledby="csv-title">
+    <form method="dialog" class="dialog-inner" id="csv-form">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="csv-title">Importar do Notion</h2>
+          <p class="dialog-sub" id="csv-sub"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="csv-body" id="csv-body"></div>
+      <footer class="dialog-foot">
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="csv-submit">Importar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/livros.js"></script>
+</body>
+
+</html>

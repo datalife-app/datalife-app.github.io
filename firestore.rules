@@ -1,0 +1,347 @@
+rules_version = '2';
+
+// ============================================
+// DataLife — Firestore Security Rules
+// ============================================
+// O código do site é público (GitHub Pages) e a apiKey também:
+// ESTAS REGRAS SÃO A ÚNICA PROTEÇÃO REAL DOS DADOS.
+//
+// Acesso restrito a contas Google específicas:
+// 1. Coloque os e-mails autorizados (minúsculos) em `emailsPermitidos()` abaixo.
+// 2. Publique: Firebase Console > Firestore Database > Regras > Publicar.
+// Cada pessoa autorizada só enxerga os próprios dados (users/{uid}).
+// Passo a passo completo: explain.md
+// ============================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function emailsPermitidos() {
+      return ['brenno.marron10@gmail.com'];
+    }
+
+    function isOwner(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in emailsPermitidos();
+    }
+
+    function isCents(v) {
+      return v is int && v >= 0 && v <= 1000000000000;
+    }
+
+    function isPct(v) {
+      return v is int && v >= 0 && v <= 100;
+    }
+
+    function isIntEntre(v, min, max) {
+      return v is int && v >= min && v <= max;
+    }
+
+    match /users/{userId}/settings/metas {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(
+             ['custosFixos', 'conforto', 'metas', 'prazeres', 'liberdade', 'conhecimento'])
+        && isPct(request.resource.data.get('custosFixos', 0))
+        && isPct(request.resource.data.get('conforto', 0))
+        && isPct(request.resource.data.get('metas', 0))
+        && isPct(request.resource.data.get('prazeres', 0))
+        && isPct(request.resource.data.get('liberdade', 0))
+        && isPct(request.resource.data.get('conhecimento', 0));
+    }
+
+    // Modelos de gastos fixos (recorrentes)
+    match /users/{userId}/settings/recorrentes {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['itens'])
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() <= 300;
+    }
+
+    match /users/{userId}/months/{month} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && request.resource.data.keys().hasOnly(['renda', 'rendas', 'gastos'])
+        && isCents(request.resource.data.get('renda', 0))
+        && request.resource.data.get('rendas', []) is list
+        && request.resource.data.get('rendas', []).size() <= 50
+        && request.resource.data.get('gastos', []) is list
+        && request.resource.data.get('gastos', []).size() <= 3000;
+    }
+
+    // ---------- Foco ----------
+
+    match /users/{userId}/settings/foco {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['pomodoro', 'agua'])
+        && request.resource.data.pomodoro is map
+        && request.resource.data.pomodoro.keys().hasOnly(['foco', 'curta', 'longa', 'ciclos', 'som'])
+        && isIntEntre(request.resource.data.pomodoro.foco, 1, 180)
+        && isIntEntre(request.resource.data.pomodoro.curta, 1, 60)
+        && isIntEntre(request.resource.data.pomodoro.longa, 1, 60)
+        && isIntEntre(request.resource.data.pomodoro.ciclos, 1, 12)
+        && request.resource.data.pomodoro.som is bool
+        && request.resource.data.get('agua', {}) is map
+        && request.resource.data.get('agua', {}).keys().hasOnly(['peso', 'exercicio', 'calor'])
+        && isIntEntre(request.resource.data.get('agua', {}).get('peso', 70), 25, 250);
+    }
+
+    // Um documento por dia (YYYY-MM-DD)
+    match /users/{userId}/foco/{dia} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && dia.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && request.resource.data.keys().hasOnly(['tarefas', 'notas', 'agua', 'refeicoes', 'exercicio', 'pomodoros'])
+        && request.resource.data.get('tarefas', []) is list
+        && request.resource.data.get('tarefas', []).size() <= 200
+        && request.resource.data.get('notas', []) is list
+        && request.resource.data.get('notas', []).size() <= 10
+        && request.resource.data.get('agua', []) is list
+        && request.resource.data.get('agua', []).size() <= 40
+        && request.resource.data.get('refeicoes', {}) is map
+        && request.resource.data.get('refeicoes', {}).keys().hasOnly(['cafe', 'almoco', 'janta'])
+        && request.resource.data.get('exercicio', false) is bool
+        && request.resource.data.get('pomodoros', 0) is int
+        && request.resource.data.get('pomodoros', 0) >= 0
+        && request.resource.data.get('pomodoros', 0) <= 500;
+    }
+
+    // ---------- Objetivos ----------
+
+    match /users/{userId}/objetivos/{objId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && objId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.keys().hasOnly(
+             ['nome', 'icone', 'alvo', 'prazo', 'mensal', 'taxa', 'criado', 'arquivado', 'movimentos'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 60
+        && isCents(request.resource.data.alvo)
+        && request.resource.data.alvo > 0
+        && request.resource.data.prazo is string
+        && request.resource.data.prazo.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && isCents(request.resource.data.get('mensal', 0))
+        && request.resource.data.get('taxa', 0) is int
+        && request.resource.data.get('taxa', 0) >= 0
+        && request.resource.data.get('taxa', 0) <= 5000
+        && request.resource.data.get('arquivado', false) is bool
+        && request.resource.data.get('movimentos', []) is list
+        && request.resource.data.get('movimentos', []).size() <= 2000;
+    }
+
+    // ---------- Livros ----------
+
+    match /users/{userId}/settings/livros {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['leitores', 'metas'])
+        && request.resource.data.leitores is list
+        && request.resource.data.leitores.size() <= 30
+        && request.resource.data.metas is map
+        && request.resource.data.metas.size() <= 200;
+    }
+
+    match /users/{userId}/livros/{livroId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && livroId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.keys().hasOnly(
+             ['titulo', 'autor', 'leitores', 'status', 'inicio', 'fim', 'avaliacao', 'paginas', 'pagina',
+              'genero', 'comentario', 'citacoes', 'criado'])
+        && request.resource.data.titulo is string
+        && request.resource.data.titulo.size() > 0
+        && request.resource.data.titulo.size() <= 200
+        && request.resource.data.get('autor', '') is string
+        && request.resource.data.get('autor', '').size() <= 120
+        && request.resource.data.status in ['lendo', 'lido', 'quero', 'abandonado']
+        && request.resource.data.get('leitores', []) is list
+        && request.resource.data.get('leitores', []).size() <= 10
+        && request.resource.data.get('avaliacao', 0) is int
+        && request.resource.data.get('avaliacao', 0) >= 0
+        && request.resource.data.get('avaliacao', 0) <= 5
+        && isIntEntre(request.resource.data.get('paginas', 1), 1, 20000)
+        && isIntEntre(request.resource.data.get('pagina', 0), 0, 20000)
+        && request.resource.data.get('comentario', '') is string
+        && request.resource.data.get('comentario', '').size() <= 4000
+        && request.resource.data.get('citacoes', []) is list
+        && request.resource.data.get('citacoes', []).size() <= 100;
+    }
+
+    // ---------- Diário ----------
+
+    match /users/{userId}/settings/diario {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['tags'])
+        && request.resource.data.tags is list
+        && request.resource.data.tags.size() <= 40;
+    }
+
+    // Conteúdo cifrado no navegador (cadeado do Diário): só {c, atualizado}
+    function isCifrado(d, max) {
+      return d.keys().hasOnly(['c', 'atualizado', 'criado'])
+        && d.c is string && d.c.size() > 0 && d.c.size() <= max
+        && d.get('atualizado', 0) is int
+        && d.get('criado', 0) is int;
+    }
+
+    // Uma entrada por dia (YYYY-MM-DD)
+    match /users/{userId}/diario/{dia} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && dia.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && (isCifrado(request.resource.data, 120000) || (
+          request.resource.data.keys().hasOnly(['texto', 'humor', 'tags', 'gratidao', 'atualizado'])
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() <= 20000
+          && isIntEntre(request.resource.data.humor, 0, 5)
+          && request.resource.data.tags is list
+          && request.resource.data.tags.size() <= 12
+          && request.resource.data.gratidao is list
+          && request.resource.data.gratidao.size() <= 3
+          && request.resource.data.atualizado is int));
+    }
+
+    // Vícios (aba do Diário)
+    match /users/{userId}/vicios/{vicioId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && vicioId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && (isCifrado(request.resource.data, 200000) || (
+          request.resource.data.keys().hasOnly(
+            ['nome', 'tipo', 'inicio', 'custoDia', 'minutosDia', 'motivos', 'planos', 'recaidas', 'vontades', 'criado', 'arquivado'])
+          && request.resource.data.nome is string
+          && request.resource.data.nome.size() > 0
+          && request.resource.data.nome.size() <= 60
+          && request.resource.data.tipo in ['fumar', 'alcool', 'telas', 'apostas', 'comida', 'compras', 'outro']
+          && request.resource.data.inicio is string
+          && request.resource.data.inicio.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && isCents(request.resource.data.get('custoDia', 0))
+          && isIntEntre(request.resource.data.get('minutosDia', 0), 0, 1440)
+          && request.resource.data.get('motivos', []) is list
+          && request.resource.data.get('motivos', []).size() <= 6
+          && request.resource.data.get('planos', []) is list
+          && request.resource.data.get('planos', []).size() <= 8
+          && request.resource.data.get('recaidas', []) is list
+          && request.resource.data.get('recaidas', []).size() <= 300
+          && request.resource.data.get('vontades', {}) is map
+          && request.resource.data.get('vontades', {}).size() <= 400
+          && request.resource.data.get('arquivado', false) is bool));
+    }
+
+    // Cadeado do Diário: sal e a chave dos dados embrulhada pela senha (nunca a senha)
+    match /users/{userId}/settings/cripto {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['v', 'id', 'sal', 'iter', 'chave', 'criado'])
+        && request.resource.data.v == 1
+        && request.resource.data.id is string && request.resource.data.id.matches('^[A-Za-z0-9_-]{8,64}$')
+        && request.resource.data.sal is string && request.resource.data.sal.size() <= 64
+        && isIntEntre(request.resource.data.iter, 100000, 5000000)
+        && request.resource.data.chave is string && request.resource.data.chave.size() <= 256
+        && request.resource.data.get('criado', 0) is int;
+    }
+
+    // ---------- Pagamentos ----------
+
+    match /users/{userId}/settings/contas {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['itens'])
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() <= 100;
+    }
+
+    // Um documento por mês: { pagas: { idDaConta: {em, valor} } }
+    match /users/{userId}/pagamentos/{mes} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && mes.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && request.resource.data.keys().hasOnly(['pagas'])
+        && request.resource.data.pagas is map
+        && request.resource.data.pagas.size() <= 100;
+    }
+
+    // ---------- Planejador ----------
+
+    match /users/{userId}/eventos/{eventoId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && eventoId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.keys().hasOnly(['titulo', 'data', 'hora', 'tipo', 'anual', 'nota', 'criado'])
+        && request.resource.data.titulo is string
+        && request.resource.data.titulo.size() > 0
+        && request.resource.data.titulo.size() <= 80
+        && request.resource.data.data is string
+        && request.resource.data.data.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && request.resource.data.get('hora', '') is string
+        && request.resource.data.get('hora', '').matches('^(([01][0-9]|2[0-3]):[0-5][0-9])?$')
+        && request.resource.data.tipo in ['compromisso', 'aniversario', 'prazo', 'saude', 'viagem', 'outro']
+        && request.resource.data.get('anual', false) is bool
+        && request.resource.data.get('nota', '') is string
+        && request.resource.data.get('nota', '').size() <= 500;
+    }
+
+    // ---------- Lista de compras ----------
+
+    match /users/{userId}/compras/lista {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['itens', 'frequentes'])
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() <= 300
+        && request.resource.data.get('frequentes', []) is list
+        && request.resource.data.get('frequentes', []).size() <= 150;
+    }
+
+    // ---------- Compras conscientes ----------
+
+    match /users/{userId}/desejos/{desejoId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && desejoId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.keys().hasOnly(['nome', 'link', 'loja', 'alvo', 'criado', 'registros', 'comprado'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 80
+        && request.resource.data.get('link', '') is string
+        && request.resource.data.get('link', '').size() <= 500
+        && (request.resource.data.get('link', '') == '' || request.resource.data.get('link', '').matches('^https?://.*'))
+        && request.resource.data.get('loja', '') is string
+        && request.resource.data.get('loja', '').size() <= 40
+        && isCents(request.resource.data.get('alvo', 0))
+        && request.resource.data.get('registros', []) is list
+        && request.resource.data.get('registros', []).size() <= 500
+        && request.resource.data.get('comprado', {}) is map;
+    }
+
+    // ---------- Exercícios e Conselhos ----------
+
+    match /users/{userId}/settings/exercicios {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['extras', 'proprios'])
+        && request.resource.data.extras is map
+        && request.resource.data.extras.size() <= 300
+        && request.resource.data.proprios is list
+        && request.resource.data.proprios.size() <= 100;
+    }
+
+    match /users/{userId}/settings/conselhos {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['feitos'])
+        && request.resource.data.feitos is list
+        && request.resource.data.feitos.size() <= 100;
+    }
+
+    // Qualquer outro caminho: negado (padrão do Firestore).
+  }
+}
