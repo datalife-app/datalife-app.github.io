@@ -13,15 +13,11 @@ import { initBackup } from './backup.js';
 // Agrupadas por assunto; dentro do grupo, na ordem de uso
 const TOOLS = [
   { grupo: 'Dinheiro', nome: 'Orçamento doméstico', desc: 'Quanto entra, quanto sai e se cada parte da renda está dentro do combinado.', icon: 'wallet', href: 'budget.html' },
-  { grupo: 'Dinheiro', nome: 'Pagamentos', desc: 'As contas fixas do mês, o que já foi pago e um aviso antes de cada vencimento.', icon: 'receipt', href: 'bills.html' },
+  { grupo: 'Dinheiro', nome: 'Situação de contas pendentes', desc: 'As contas fixas do mês, o que já foi pago e um aviso antes de cada vencimento.', icon: 'receipt', href: 'bills.html' },
   { grupo: 'Dinheiro', nome: 'Objetivos', desc: 'Quanto guardar por mês para chegar lá no prazo, e se isso cabe no orçamento.', icon: 'flag', href: 'goals.html' },
   { grupo: 'Dinheiro', nome: 'Compras conscientes', desc: 'Anote o preço do que você quer comprar e descubra quando a oferta é real.', icon: 'tag', href: 'wishlist.html' },
+  { grupo: 'Dinheiro', nome: 'Calculadoras e simuladores', desc: 'Primeiro milhão, tempo até a meta, juros compostos, renda e aposentadoria.', icon: 'calculator', href: 'calculators.html' },
   { grupo: 'Dinheiro', nome: 'Conselhos', discreto: true, desc: 'Guias curtos para organizar o dinheiro, montar a reserva e fugir de juros e golpes.', icon: 'lightbulb', href: 'advice.html' },
-  { grupo: 'Dinheiro', sub: 'Calculadoras e simuladores', nome: 'Primeiro milhão', desc: 'Quando chega o R$ 1 milhão e a renda que ele paga.', icon: 'trending', href: 'calculators.html#milhao' },
-  { grupo: 'Dinheiro', sub: 'Calculadoras e simuladores', nome: 'Tempo até a meta', desc: 'Quanto tempo leva para chegar lá, aportando de R$ 50 a R$ 50 mil.', icon: 'target', href: 'calculators.html#meta' },
-  { grupo: 'Dinheiro', sub: 'Calculadoras e simuladores', nome: 'Juros compostos', desc: 'Quanto o dinheiro rende com aportes todo mês.', icon: 'percent', href: 'calculators.html#juros' },
-  { grupo: 'Dinheiro', sub: 'Calculadoras e simuladores', nome: 'Renda', desc: 'Retirando todo mês: quanto sobra e quanto tempo dura.', icon: 'coins', href: 'calculators.html#renda' },
-  { grupo: 'Dinheiro', sub: 'Calculadoras e simuladores', nome: 'Aposentadoria', desc: 'Quanto investir, com quanto parar e a herança que fica.', icon: 'hourglass', href: 'calculators.html#aposentadoria' },
   { grupo: 'Rotina', nome: 'Foco', desc: 'Um dia de cada vez: tarefas, notas, pomodoro, água e o quadro do que está andando.', icon: 'timer', href: 'focus.html' },
   { grupo: 'Rotina', nome: 'Planejador', desc: 'Datas que não podem passar, com aviso um mês antes, na semana e no próprio dia.', icon: 'calendarClock', href: 'planner.html' },
   { grupo: 'Rotina', nome: 'Lista de compras', desc: 'A lista do mercado já separada por corredor, com o que você sempre compra.', icon: 'cart', href: 'groceries.html' },
@@ -37,11 +33,9 @@ initPagina();
 dadosProntos(); // o Hub não lê dados (só os avisos, que não gravam nada)
 
 const grupos = [...new Set(TOOLS.map(t => t.grupo))];
-// Ferramentas "discretas" (Conselhos) viram um link pequeno ao lado do título do grupo;
-// as com `sub` formam uma subseção compacta abaixo das ferramentas do grupo
+// Ferramentas "discretas" (Conselhos) viram um link pequeno ao lado do título do grupo
 document.getElementById('tool-list').innerHTML = grupos.map(g => {
   const doGrupo = TOOLS.filter(t => t.grupo === g && !t.discreto);
-  const subs = [...new Set(doGrupo.filter(t => t.sub).map(t => t.sub))];
   return `
   <li class="tool-group">
     <div class="tool-group-head">
@@ -50,7 +44,7 @@ document.getElementById('tool-list').innerHTML = grupos.map(g => {
         <a class="tool-mini" href="${t.href}" title="${t.desc}">${icon(t.icon, 14)}<span>${t.nome}</span></a>`).join('')}
     </div>
     <ul class="tool-grid">
-      ${doGrupo.filter(t => !t.sub).map(t => `
+      ${doGrupo.map(t => `
         <li>
           <a class="tool-card" href="${t.href}">
             <span class="tool-icon">${icon(t.icon, 20)}</span>
@@ -59,23 +53,6 @@ document.getElementById('tool-list').innerHTML = grupos.map(g => {
           </a>
         </li>`).join('')}
     </ul>
-    ${subs.map(sub => `
-    <div class="tool-sub">
-      <div class="tool-sub-head">
-        <h3 class="tool-sub-title">${icon('calculator', 15)}${sub}</h3>
-        <a class="tool-sub-all" href="calculators.html">Ver todas ${icon('arrowRight', 14)}</a>
-      </div>
-      <ul class="tool-sub-grid">
-        ${doGrupo.filter(t => t.sub === sub).map(t => `
-          <li>
-            <a class="tool-calc" href="${t.href}">
-              <span class="tool-calc-icon">${icon(t.icon, 18)}</span>
-              <strong>${t.nome}</strong>
-              <span>${t.desc}</span>
-            </a>
-          </li>`).join('')}
-      </ul>
-    </div>`).join('')}
   </li>`;
 }).join('');
 

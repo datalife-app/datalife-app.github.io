@@ -155,34 +155,6 @@
   .tool-card:hover { border-color: var(--p-300); background: var(--bg-hover); }
   .tool-card:hover .tool-go { transform: translateX(4px); color: var(--accent); }
 }
-/* Subseção do grupo (Calculadoras e simuladores) */
-.tool-sub { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: color-mix(in srgb, var(--bg-raised) 55%, transparent); }
-.tool-sub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.tool-sub-title { display: inline-flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
-.tool-sub-title svg { color: var(--accent); }
-.tool-sub-all { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; font-weight: 500; color: var(--accent); }
-.tool-sub-grid { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.tool-calc {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  height: 100%;
-  padding: 14px;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  transition: border-color 150ms ease, background-color 150ms ease, transform 160ms var(--ease-out);
-}
-.tool-calc:active { transform: scale(0.98); }
-.tool-calc-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 6px; border-radius: 8px; background: var(--tint); color: var(--accent); }
-.tool-calc strong { font-size: 0.92rem; font-weight: 650; letter-spacing: var(--track-title); }
-.tool-calc span:last-child { font-size: 0.76rem; line-height: 1.4; color: var(--text-muted); text-wrap: pretty; }
-@media (hover: hover) and (pointer: fine) {
-  .tool-calc:hover { border-color: var(--p-300); background: var(--bg-hover); }
-}
-@media (max-width: 1000px) { .tool-sub-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .tool-sub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 420px) { .tool-sub { padding: 10px; } .tool-calc { padding: 12px; } }
 @media (max-width: 720px) {
   .tool-grid { grid-template-columns: minmax(0, 1fr); }
   .tool-card { padding: 14px; }
