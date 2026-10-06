@@ -332,7 +332,7 @@ export function initVisao(options) {
   }, 150));
 }
 
-/** Chamado ao abrir a aba: busca todos os meses (1 leitura por mês; cache offline ajuda). */
+/** Chamado ao abrir a aba: todos os meses (lidos uma vez por visita; db.js relê após uma edição). */
 export async function showVisao() {
   const seq = ++loadSeq;
   $('view-visao').setAttribute('aria-busy', 'true');

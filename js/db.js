@@ -92,8 +92,13 @@ export async function fetchMonth(uid, key) {
   return sanitizeMonth(snap.exists() ? snap.data() : null);
 }
 
-/** Todos os meses salvos, em ordem cronológica: [{ key, renda, gastos }]. Usado na visão geral. */
-export async function fetchAllMonths(uid) {
+/* Todos os meses: lidos uma vez por visita (1 leitura por mês salvo) e
+   reaproveitados pela Visão geral e pela busca. Qualquer escrita em um mês
+   (por esta página) descarta a cópia; a próxima consulta lê de novo. */
+let todos = null; // { uid, p }
+const sujarMeses = () => { todos = null; };
+
+async function lerTodosMeses(uid) {
   let entries;
   if (LOCAL_MODE) {
     entries = lsList('months');
@@ -107,6 +112,16 @@ export async function fetchAllMonths(uid) {
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
+/** Todos os meses salvos, em ordem cronológica: [{ key, renda, gastos }]. Usado na visão geral e na busca. */
+export async function fetchAllMonths(uid) {
+  if (todos?.uid !== uid) {
+    const p = lerTodosMeses(uid);
+    todos = { uid, p };
+    p.catch(() => { if (todos?.p === p) todos = null; }); // falhou: a próxima tenta de novo
+  }
+  return structuredClone(await todos.p); // cópia: quem chama pode mexer à vontade
+}
+
 /** Substitui as fontes de renda do mês (lista pequena) e o total em `renda`. */
 export async function saveRendas(uid, key, rendas) {
   assertMonth(key);
@@ -114,6 +129,7 @@ export async function saveRendas(uid, key, rendas) {
   if (clean.some(r => !r) || clean.length > 50) throw new Error('Renda inválida');
   const renda = clean.reduce((a, r) => a + r.valor, 0);
   if (!isCents(renda)) throw new Error('Renda inválida');
+  sujarMeses();
   if (LOCAL_MODE) return lsWrite(`months/${key}`, { ...sanitizeMonth(lsRead(`months/${key}`)), rendas: clean, renda });
   await fs.setDoc(ref(uid, 'months', key), { rendas: clean, renda }, { merge: true });
 }
@@ -141,6 +157,7 @@ export async function addGastos(uid, key, gastos) {
   assertMonth(key);
   const clean = gastos.map(sanitizeGasto);
   if (!clean.length || clean.some(g => !g)) throw new Error('Gasto inválido');
+  sujarMeses();
   if (LOCAL_MODE) {
     const m = sanitizeMonth(lsRead(`months/${key}`));
     return lsWrite(`months/${key}`, { ...m, gastos: [...m.gastos, ...clean] });
@@ -150,6 +167,7 @@ export async function addGastos(uid, key, gastos) {
 
 export async function removeGasto(uid, key, gasto) {
   assertMonth(key);
+  sujarMeses();
   if (LOCAL_MODE) {
     const m = sanitizeMonth(lsRead(`months/${key}`));
     return lsWrite(`months/${key}`, { ...m, gastos: m.gastos.filter(g => g.id !== gasto.id) });
@@ -163,6 +181,7 @@ export async function updateGasto(uid, key, oldGasto, newGasto) {
   assertMonth(key);
   const clean = sanitizeGasto(newGasto);
   if (!clean || clean.id !== oldGasto.id) throw new Error('Gasto inválido');
+  sujarMeses();
   if (LOCAL_MODE) {
     const m = sanitizeMonth(lsRead(`months/${key}`));
     return lsWrite(`months/${key}`, { ...m, gastos: m.gastos.map(g => (g.id === clean.id ? clean : g)) });
@@ -207,6 +226,7 @@ export function parseBackup(json) {
  * renda só é preenchida em meses sem renda; metas e recorrentes são substituídos.
  */
 export async function importBackup(uid, parsed) {
+  sujarMeses(); // a mescla precisa do banco como está agora
   const current = new Map((await fetchAllMonths(uid)).map(m => [m.key, m]));
   const writes = parsed.months.map(m => {
     const cur = current.get(m.key);
@@ -234,6 +254,7 @@ export async function importBackup(uid, parsed) {
     }
     if (!metasCrua) lsWrite('settings/metas', parsed.metas);
     lsWrite('settings/recorrentes', { itens: recorrentes });
+    sujarMeses();
     return writes.length;
   }
 
@@ -244,6 +265,7 @@ export async function importBackup(uid, parsed) {
     ...(metasCrua ? [] : [[ref(uid, 'settings', 'metas'), parsed.metas]]),
     [ref(uid, 'settings', 'recorrentes'), { itens: recorrentes }]
   ];
+  sujarMeses();
   await commitInBatches(ops);
   return writes.length;
 }

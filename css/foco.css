@@ -202,7 +202,30 @@
 }
 
 /* ---------- Pomodoro ---------- */
-.pomo-today { font-size: 0.8rem; color: var(--text-muted); }
+/* Focos do dia: chip em destaque no cabeçalho (some quando é zero) */
+.pomo-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: var(--tint);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pomo-today:empty { display: none; }
+.pomo-today svg { color: var(--accent); flex-shrink: 0; }
+.pomo-today b { font-size: 1rem; font-weight: 700; color: var(--accent-strong); line-height: 1; }
+.pomo-today.is-novo { animation: pomo-novo 520ms var(--ease-out); }
+@keyframes pomo-novo {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.12); background: var(--tint-strong); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .pomo-today.is-novo { animation: none; } }
 .pomo-dial {
   position: relative;
   width: min(208px, 100%);
@@ -703,6 +726,52 @@ button.hist-cel { cursor: pointer; transition: transform 120ms var(--ease-out); 
 .hist-cel.is-parcial { background: color-mix(in srgb, var(--accent) 38%, var(--track)); }
 .hist-cel.is-vazio, .hist-cel.is-sem { background: transparent; border: 1px dashed var(--line); }
 .hist-cel.is-futuro { background: transparent; border: 1px solid var(--line); opacity: 0.5; }
+/* Focos no mês: barras por dia com a quantidade em cima */
+.hist-focos-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.hist-focos-head .card-title { margin-bottom: 0; }
+.hist-focos-resumo { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.82rem; color: var(--text-muted); }
+.hist-focos-resumo strong { font-size: 1rem; font-weight: 700; color: var(--text); }
+.hist-focos {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(14px, 1fr));
+  gap: 2px;
+  min-width: calc(var(--n) * 18px);
+  --altura: 132px;
+}
+.hist-focos-col { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; background: none; border: 0; border-radius: 4px; color: inherit; font: inherit; }
+button.hist-focos-col { cursor: pointer; }
+.hist-focos-barra { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: var(--altura); padding-top: 16px; } /* folga para o número da barra mais alta */
+.hist-focos-barra i {
+  display: block;
+  width: min(100%, 18px);
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--accent) 45%, var(--track));
+  transform-origin: bottom;
+  animation: hist-focos-sobe 420ms var(--ease-out) both;
+}
+.hist-focos-barra i.is-ok { background: var(--accent); }
+.hist-focos-n { margin-bottom: 3px; font-size: 0.72rem; font-weight: 700; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.hist-focos-dia { font-size: 0.68rem; line-height: 1.5; text-align: center; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.hist-focos-col.is-hoje .hist-focos-dia { color: var(--accent); font-weight: 700; }
+.hist-focos-col.is-futuro { opacity: 0.5; }
+/* Linha da meta (4 focos), atrás das barras */
+.hist-focos-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(0.68rem * 1.5 + 6px + (var(--altura) - 16px) * var(--meta));
+  border-top: 1px dashed var(--line-strong);
+  pointer-events: none;
+}
+.hist-focos-meta b { position: absolute; right: 0; top: -1.3em; font-size: 0.66rem; font-weight: 600; color: var(--text-dim); }
+.hist-focos-nota { margin-top: 10px; font-size: 0.75rem; color: var(--text-dim); }
+@keyframes hist-focos-sobe { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) { .hist-focos-barra i { animation: none; } }
+@media (hover: hover) and (pointer: fine) {
+  button.hist-focos-col:hover .hist-focos-barra { background: var(--bg-hover); border-radius: 4px; }
+}
 .hist-legenda { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 0.75rem; color: var(--text-muted); }
 .hist-legenda li { display: flex; align-items: center; gap: 6px; }
 .hist-legenda .hist-cel { width: 12px; min-height: 12px; }

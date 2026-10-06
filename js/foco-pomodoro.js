@@ -191,7 +191,19 @@ export function render() {
   $('pomo-cycles').setAttribute('aria-label', `${cheios} de ${ciclos} focos até a pausa longa`);
 
   const n = ctx.focosDoDia();
-  $('pomo-today').textContent = n ? `${n} ${n === 1 ? 'foco' : 'focos'} ${ctx.isToday() ? 'hoje' : 'neste dia'}` : '';
+  const hoje = $('pomo-today');
+  const chave = `${n}:${ctx.isToday()}`;
+  if (hoje.dataset.n !== chave) {
+    // +1 no mesmo dia: o chip "pula" para celebrar o foco concluído
+    const subiu = hoje.dataset.n === `${n - 1}:true` && ctx.isToday();
+    hoje.dataset.n = chave;
+    hoje.innerHTML = n ? `${icon('target', 14)}<b class="num">${n}</b> ${n === 1 ? 'foco' : 'focos'} ${ctx.isToday() ? 'hoje' : 'neste dia'}` : '';
+    if (subiu) {
+      hoje.classList.remove('is-novo');
+      void hoje.offsetWidth; // reinicia a animação
+      hoje.classList.add('is-novo');
+    }
+  }
   frame();
 }
 

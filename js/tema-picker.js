@@ -21,7 +21,8 @@ function close(returnFocus) {
   window.removeEventListener('scroll', onClose, true);
   if (returnFocus) btn.focus();
 }
-const onClose = () => close();
+// A lista rola por dentro (são muitos temas): rolar nela não fecha
+const onClose = e => { if (e?.type === 'scroll' && pop?.el.contains(e.target)) return; close(); };
 const onOutside = e => { if (pop && !pop.el.contains(e.target) && !pop.btn.contains(e.target)) close(); };
 
 function render(active) {
@@ -34,6 +35,7 @@ function render(active) {
       <span class="tema-nome">${escapeHtml(t.nome)}<small>${escapeHtml(t.desc)}</small></span>${t.id === T.atual() ? icon('check', 14) : ''}
     </div>`).join('');
   pop.el.setAttribute('aria-activedescendant', `tema-${T.lista[active].id}`);
+  pop.el.querySelector('.tema-opt.is-active')?.scrollIntoView({ block: 'nearest' });
 }
 
 function escolher(i) {

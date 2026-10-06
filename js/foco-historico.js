@@ -106,6 +106,42 @@ export function render() {
   const pend = passados.filter(k => k < hoje).reverse()
     .flatMap(k => dados.get(k).tarefas.filter(t => !t.feita).map(t => ({ k, t })));
 
+  // Focos por dia: uma barra por dia, com a quantidade escrita em cima
+  const META_FOCOS = 4; // o mesmo corte do "completo" da grade
+  const focosDia = passados.map(k => av.get(k)._.pomodoros);
+  const diasComFoco = focosDia.filter(Boolean).length;
+  const recorde = Math.max(0, ...focosDia);
+  const escala = Math.max(META_FOCOS + 1, recorde);
+  const focosGrafico = `
+    <section class="hist-sec" aria-labelledby="hist-focos-title">
+      <div class="hist-focos-head">
+        <h2 class="card-title" id="hist-focos-title">Focos no mês</h2>
+        <p class="hist-focos-resumo">
+          <span><strong class="num">${totFocos}</strong> ${totFocos === 1 ? 'foco' : 'focos'}</span>
+          <span><strong class="num">${diasComFoco}</strong> ${diasComFoco === 1 ? 'dia' : 'dias'} com foco</span>
+          ${recorde ? `<span>recorde <strong class="num">${recorde}</strong></span>` : ''}
+        </p>
+      </div>
+      ${totFocos ? `
+      <div class="hist-grade-wrap">
+        <div class="hist-focos" style="--n:${n}; --meta:${META_FOCOS / escala}">
+          <span class="hist-focos-meta" aria-hidden="true"><b>${META_FOCOS}</b></span>
+          ${dias.map(k => {
+            const dd = fromDayKey(k).getDate();
+            if (k > hoje) return `<span class="hist-focos-col is-futuro"><span class="hist-focos-barra"></span><span class="hist-focos-dia">${dd}</span></span>`;
+            const v = av.get(k)._.pomodoros;
+            const txt = `${fmt(k)}: ${v} ${v === 1 ? 'foco' : 'focos'}`;
+            return `<button type="button" class="hist-focos-col ${k === hoje ? 'is-hoje' : ''}" data-dia="${k}" title="${txt}" aria-label="${txt}">
+              <span class="hist-focos-barra">${v ? `<span class="hist-focos-n num">${v}</span><i class="${v >= META_FOCOS ? 'is-ok' : ''}" style="height:${(v / escala) * 100}%"></i>` : ''}</span>
+              <span class="hist-focos-dia">${dd}</span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+      <p class="hist-focos-nota">Linha tracejada: meta de ${META_FOCOS} focos no dia (o ciclo até a pausa longa).</p>`
+      : `<p class="hist-vazio">Nenhum foco concluído neste mês ainda. Cada Pomodoro terminado aparece aqui.</p>`}
+    </section>`;
+
   $('hist-body').innerHTML = `
     <div class="hist-kpis">
       ${kpi('Água em dia', copos ? `${conta('agua')} <span>de ${base}</span>` : '—', copos ? `${plural(conta('agua'), 'dia')} com os ${copos} copos (${(copos * COPO_ML / 1000).toLocaleString('pt-BR')} L)` : 'informe o peso nos Ajustes', copos ? conta('agua') / base : null)}
@@ -114,6 +150,7 @@ export function render() {
       ${kpi('Tarefas feitas', `${totFeitas} <span>de ${totTarefas}</span>`, totTarefas ? `${Math.round((totFeitas / totTarefas) * 100)}% concluídas` : 'nenhuma no mês', totTarefas ? totFeitas / totTarefas : null)}
       ${kpi('Focos', `${totFocos}`, `${Math.round(totFocos * (cfg?.pomodoro?.foco || 25) / 60)} h de foco no mês`, null)}
     </div>
+    ${focosGrafico}
     <section class="hist-sec" aria-labelledby="hist-grade-title">
       <h2 class="card-title" id="hist-grade-title">Dia a dia</h2>
       ${grade}
@@ -144,7 +181,7 @@ export function initHistorico(options) {
       const li = tr.closest('[data-id]');
       return ctx.trazer(li.dataset.dia, li.dataset.id);
     }
-    const cel = e.target.closest('.hist-cel[data-dia]');
+    const cel = e.target.closest('.hist-cel[data-dia], .hist-focos-col[data-dia]');
     if (cel) ctx.abrirDia(cel.dataset.dia);
   });
 }

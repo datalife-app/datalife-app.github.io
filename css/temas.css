@@ -116,6 +116,446 @@
   --backdrop: rgb(0 0 0 / 0.65);
 }
 
+/* ---------- Escuros com destaque: a cor de ação contrasta com a primária ---------- */
+
+/* ---------- Noturno: azul-ardósia, ação em coral (par escuro do Clareza) ---------- */
+:root[data-theme="noturno"] {
+  --p-100: #dbe8fe;
+  --p-200: #6aa8f8;
+  --p-300: #3b6fd4;
+  --p-400: #284fa8;
+  --p-500: #1a326b;
+
+  --bg: #0b1120;
+  --bg-raised: #111a2e;
+  --bg-input: #080d19;
+  --bg-hover: #172238;
+  --line: #1e293b;
+  --line-strong: #334155;
+  --track: #1a2436;
+
+  --text: #e2e8f0;
+  --text-muted: #a1aec2;
+  --text-dim: #8794a9;
+  --on-accent: #0a1630;
+
+  --cta: #ff8a73;
+  --cta-hover: #ffa797;
+  --on-cta: #2a0c06;
+
+  --ok: #7fd4a0;
+  --warn: #f0c674;
+  --danger: #f47398;
+
+  --cat-1: #e8f0ff;
+  --cat-6: #1f3f85;
+  --serie-ganhos: #a9cbfb;
+  --serie-gastos: #3b6fd4;
+  --backdrop: rgb(2 6 18 / 0.65);
+}
+
+/* ---------- Musgo: sálvia no escuro, ação em terracota (par escuro do Sálvia) ---------- */
+:root[data-theme="musgo"] {
+  --p-100: #dbe7dc;
+  --p-200: #a3c4aa;
+  --p-300: #5f8569;
+  --p-400: #456550;
+  --p-500: #2b4033;
+
+  --bg: #121715;
+  --bg-raised: #18201c;
+  --bg-input: #0e1311;
+  --bg-hover: #1e2823;
+  --line: #26302b;
+  --line-strong: #36443d;
+  --track: #1f2924;
+
+  --text: #e4ebe5;
+  --text-muted: #a6b5aa;
+  --text-dim: #8d9e92;
+  --on-accent: #13201a;
+
+  --cta: #e8896d;
+  --cta-hover: #f0a48c;
+  --on-cta: #2b1a14;
+
+  --ok: #8fd6a7;
+  --warn: #e8c27a;
+  --danger: #f27a8a;
+
+  --cat-1: #eef5ee;
+  --cat-6: #33503e;
+  --serie-ganhos: #bcd6c1;
+  --serie-gastos: #5f8569;
+  --backdrop: rgb(5 9 7 / 0.65);
+}
+
+/* ---------- Lousa: quadro-negro, giz e marca-texto amarelo (par escuro do Caderno) ---------- */
+:root[data-theme="lousa"] {
+  --p-100: #fff1c7;
+  --p-200: #ffd166;
+  --p-300: #9c7414;
+  --p-400: #6f530e;
+  --p-500: #4a3a10;
+
+  --bg: #1b201d;
+  --bg-raised: #222824;
+  --bg-input: #161a17;
+  --bg-hover: #2a312c;
+  --line: #323a34;
+  --line-strong: #434d46;
+  --track: #2b322d;
+
+  --text: #eeede6;
+  --text-muted: #b5b7ad;
+  --text-dim: #9c9f95;
+  --on-accent: #2a2a2a;
+
+  --cta: #ffd166;
+  --cta-hover: #ffe08f;
+  --on-cta: #2a2a2a;
+
+  --ok: #9ad7a8;
+  --warn: #f4a96a;
+  --danger: #f07a6e;
+
+  --cat-1: #fff7df;
+  --cat-6: #5c4610;
+  --serie-ganhos: #ffe29a;
+  --serie-gastos: #9c7414;
+  --backdrop: rgb(5 7 6 / 0.65);
+}
+
+:root[data-theme="lousa"] ::selection { background: #ffd166; color: #2a2a2a; }
+
+/* ================= CLÁSSICOS DE IDE (escuros) =================
+   Paletas oficiais; onde a cor original não passava no contraste
+   (comentários, vermelhos), foi clareada no mesmo tom. */
+
+/* ---------- Dracula: roxo, ação em rosa ---------- */
+:root[data-theme="dracula"] {
+  --p-100: #e3d1ff;
+  --p-200: #bd93f9;
+  --p-300: #7f62b3;
+  --p-400: #5f4a8c;
+  --p-500: #44395f;
+
+  --bg: #282a36;
+  --bg-raised: #2f3141;
+  --bg-input: #21222c;
+  --bg-hover: #383a4c;
+  --line: #3a3d4e;
+  --line-strong: #44475a;
+  --track: #343746;
+
+  --text: #f8f8f2;
+  --text-muted: #c3c6dc;
+  --text-dim: #a9add0;
+  --on-accent: #21222c;
+
+  --cta: #ff79c6;
+  --cta-hover: #ff9bd4;
+  --on-cta: #21222c;
+
+  --ok: #50fa7b;
+  --warn: #ffb86c;
+  --danger: #ff7b7b;
+
+  --cat-1: #f1e8ff;
+  --cat-6: #4d3f70;
+  --serie-ganhos: #d6bcfc;
+  --serie-gastos: #7f62b3;
+  --backdrop: rgb(15 16 22 / 0.65);
+}
+
+/* ---------- Monokai: ciano, ação em magenta ---------- */
+:root[data-theme="monokai"] {
+  --p-100: #c8f1fa;
+  --p-200: #66d9ef;
+  --p-300: #2f7f90;
+  --p-400: #235f6c;
+  --p-500: #1b4650;
+
+  --bg: #272822;
+  --bg-raised: #2e2f29;
+  --bg-input: #1e1f1a;
+  --bg-hover: #3e3d32;
+  --line: #3b3c35;
+  --line-strong: #49483e;
+  --track: #34352f;
+
+  --text: #f8f8f2;
+  --text-muted: #c4c3b6;
+  --text-dim: #a8a796;
+  --on-accent: #1e1f1a;
+
+  --cta: #fc4483;
+  --cta-hover: #ff6fa0;
+  --on-cta: #1e1f1a;
+
+  --ok: #a6e22e;
+  --warn: #e6db74;
+  --danger: #fd971f;
+
+  --cat-1: #e3f8fd;
+  --cat-6: #1f5562;
+  --serie-ganhos: #a3e9f6;
+  --serie-gastos: #2f7f90;
+  --backdrop: rgb(12 12 10 / 0.65);
+}
+
+/* ---------- One Dark (Atom): azul, ação em roxo ---------- */
+:root[data-theme="onedark"] {
+  --p-100: #cde6fb;
+  --p-200: #61afef;
+  --p-300: #36709f;
+  --p-400: #2c5a80;
+  --p-500: #1d3d5c;
+
+  --bg: #282c34;
+  --bg-raised: #2c313a;
+  --bg-input: #21252b;
+  --bg-hover: #353b45;
+  --line: #3a3f4b;
+  --line-strong: #4b5263;
+  --track: #323842;
+
+  --text: #dcdfe4;
+  --text-muted: #abb2bf;
+  --text-dim: #a0a7b3;
+  --on-accent: #1b1f25;
+
+  --cta: #c678dd;
+  --cta-hover: #d699e6;
+  --on-cta: #1b1f25;
+
+  --ok: #98c379;
+  --warn: #e5c07b;
+  --danger: #ef7f88;
+
+  --cat-1: #e6f2fd;
+  --cat-6: #244a6b;
+  --serie-ganhos: #a4d0f5;
+  --serie-gastos: #36709f;
+  --backdrop: rgb(12 14 17 / 0.65);
+}
+
+/* ---------- Nord: azul gelo, ação em laranja aurora ---------- */
+:root[data-theme="nord"] {
+  --p-100: #d4ecf2;
+  --p-200: #88c0d0;
+  --p-300: #4e6d94;
+  --p-400: #435d80;
+  --p-500: #384d68;
+
+  --bg: #2e3440;
+  --bg-raised: #353c4a;
+  --bg-input: #292e39;
+  --bg-hover: #3b4252;
+  --line: #3e4555;
+  --line-strong: #4c566a;
+  --track: #3b4252;
+
+  --text: #eceff4;
+  --text-muted: #c5cdd9;
+  --text-dim: #aab3c3;
+  --on-accent: #242933;
+
+  --cta: #d08770;
+  --cta-hover: #dda08d;
+  --on-cta: #242933;
+
+  --ok: #a3be8c;
+  --warn: #ebcb8b;
+  --danger: #e9979e;
+
+  --cat-1: #e8f4f7;
+  --cat-6: #3e5573;
+  --serie-ganhos: #b4d8e2;
+  --serie-gastos: #4e6d94;
+  --backdrop: rgb(20 23 29 / 0.65);
+}
+
+/* ---------- Solarized Dark: azul, ação em amarelo ---------- */
+:root[data-theme="solarized"] {
+  --p-100: #bfe0f7;
+  --p-200: #5aaee8;
+  --p-300: #1f6fa8;
+  --p-400: #195a88;
+  --p-500: #0d3f5c;
+
+  --bg: #002b36;
+  --bg-raised: #073642;
+  --bg-input: #00222b;
+  --bg-hover: #0d3f4c;
+  --line: #0f3d49;
+  --line-strong: #1d4f5b;
+  --track: #0a3440;
+
+  --text: #eee8d5;
+  --text-muted: #a9b5b4;
+  --text-dim: #98a7a7;
+  --on-accent: #00212a;
+
+  --cta: #b58900;
+  --cta-hover: #cf9e0f;
+  --on-cta: #00212a;
+
+  --ok: #a3b53a;
+  --warn: #ec8550;
+  --danger: #f57a74;
+
+  --cat-1: #ddeefb;
+  --cat-6: #134a6b;
+  --serie-ganhos: #8cc4ec;
+  --serie-gastos: #1f6fa8;
+  --backdrop: rgb(0 14 18 / 0.65);
+}
+
+/* ---------- Gruvbox Dark: retrô quente, ação em amarelo ---------- */
+:root[data-theme="gruvbox"] {
+  --p-100: #cfe0dc;
+  --p-200: #83a598;
+  --p-300: #4f6f63;
+  --p-400: #3f5a50;
+  --p-500: #2b3d37;
+
+  --bg: #282828;
+  --bg-raised: #32302f;
+  --bg-input: #1d2021;
+  --bg-hover: #3c3836;
+  --line: #3c3836;
+  --line-strong: #504945;
+  --track: #3c3836;
+
+  --text: #ebdbb2;
+  --text-muted: #c9b99a;
+  --text-dim: #b0a189;
+  --on-accent: #1d2021;
+
+  --cta: #fabd2f;
+  --cta-hover: #fcd06a;
+  --on-cta: #1d2021;
+
+  --ok: #b8bb26;
+  --warn: #fe8019;
+  --danger: #fb7a63;
+
+  --cat-1: #e6f0ed;
+  --cat-6: #344b43;
+  --serie-ganhos: #aecbbf;
+  --serie-gastos: #4f6f63;
+  --backdrop: rgb(10 10 10 / 0.65);
+}
+
+/* ---------- Tokyo Night: azul neon, ação em magenta ---------- */
+:root[data-theme="tokyonight"] {
+  --p-100: #c7d7fd;
+  --p-200: #7aa2f7;
+  --p-300: #3d59a1;
+  --p-400: #33498a;
+  --p-500: #283457;
+
+  --bg: #1a1b26;
+  --bg-raised: #1f2335;
+  --bg-input: #16161e;
+  --bg-hover: #292e42;
+  --line: #292e42;
+  --line-strong: #3b4261;
+  --track: #24283b;
+
+  --text: #c0caf5;
+  --text-muted: #a9b1d6;
+  --text-dim: #8f97c2;
+  --on-accent: #16161e;
+
+  --cta: #bb9af7;
+  --cta-hover: #cdb4fa;
+  --on-cta: #16161e;
+
+  --ok: #9ece6a;
+  --warn: #e0af68;
+  --danger: #f7768e;
+
+  --cat-1: #e3ebfe;
+  --cat-6: #2c3d75;
+  --serie-ganhos: #a9c2fa;
+  --serie-gastos: #3d59a1;
+  --backdrop: rgb(8 8 14 / 0.65);
+}
+
+/* ---------- Catppuccin Mocha: malva, ação em pêssego ---------- */
+:root[data-theme="catppuccin"] {
+  --p-100: #e8d8fc;
+  --p-200: #cba6f7;
+  --p-300: #7f5bb5;
+  --p-400: #634692;
+  --p-500: #45366a;
+
+  --bg: #1e1e2e;
+  --bg-raised: #24273a;
+  --bg-input: #181825;
+  --bg-hover: #313244;
+  --line: #313244;
+  --line-strong: #45475a;
+  --track: #2a2b3c;
+
+  --text: #cdd6f4;
+  --text-muted: #bac2de;
+  --text-dim: #a6adc8;
+  --on-accent: #181825;
+
+  --cta: #fab387;
+  --cta-hover: #fcc8a7;
+  --on-cta: #181825;
+
+  --ok: #a6e3a1;
+  --warn: #f9e2af;
+  --danger: #f38ba8;
+
+  --cat-1: #f3ecfe;
+  --cat-6: #4f3a78;
+  --serie-ganhos: #dcc3fa;
+  --serie-gastos: #7f5bb5;
+  --backdrop: rgb(10 10 16 / 0.65);
+}
+
+/* ---------- GitHub Dark: azul, ação em verde (como o botão do GitHub) ---------- */
+:root[data-theme="github"] {
+  --p-100: #cae8ff;
+  --p-200: #4493f8;
+  --p-300: #1f6feb;
+  --p-400: #1158c7;
+  --p-500: #0d419d;
+
+  --bg: #0d1117;
+  --bg-raised: #161b22;
+  --bg-input: #010409;
+  --bg-hover: #1f242c;
+  --line: #21262d;
+  --line-strong: #30363d;
+  --track: #21262d;
+
+  --text: #e6edf3;
+  --text-muted: #a3acb7;
+  --text-dim: #8d96a0;
+  --on-accent: #0d1117;
+
+  --cta: #238636;
+  --cta-hover: #1d7330;
+  --on-cta: #ffffff;
+
+  --ok: #3fb950;
+  --warn: #d29922;
+  --danger: #f85149;
+
+  --cat-1: #ddf0ff;
+  --cat-6: #0c3a85;
+  --serie-ganhos: #a5d6ff;
+  --serie-gastos: #1f6feb;
+  --backdrop: rgb(1 4 9 / 0.7);
+}
+
 /* ================= CLAROS ================= */
 
 /* Base comum dos temas claros: tinta escura sobre os tons claros, sombras leves */
@@ -288,7 +728,7 @@
 }
 
 /* ---------- Seletor de tema ---------- */
-.tema-pop { min-width: 240px; max-height: none; }
+.tema-pop { min-width: 240px; max-height: min(560px, calc(100vh - 80px)); }
 .tema-grupo { padding: 8px 10px 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-dim); }
 .tema-opt { gap: 12px; justify-content: flex-start; min-height: 40px; }
 .tema-opt .tema-nome { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
