@@ -116,6 +116,43 @@
   --backdrop: rgb(0 0 0 / 0.65);
 }
 
+/* ---------- Sem distração: inspirado no app no-distraction ----------
+   Quase preto neutro, tinta cinza-fria e um único acento sálvia; o mel
+   (destaque do "hoje" no app original) fica para atenção, a terracota
+   para excluir. Calmo de propósito: nada compete com o conteúdo. */
+:root[data-theme="semdistracao"] {
+  --p-100: #aec198;
+  --p-200: #8fa67e;
+  --p-300: #5f7351;
+  --p-400: #475740;
+  --p-500: #2c3628;
+
+  --bg: #0d0e10;
+  --bg-raised: #15171a;
+  --bg-input: #0a0b0c;
+  --bg-hover: #1c1f23;
+  --line: #22252a;
+  --line-strong: #30343a;
+  --track: #1c1f23;
+
+  --text: #e6e8ec;
+  --text-muted: #b7bbc2;
+  --text-dim: #8e939a;   /* o "ink-faint" original (#7e8389), um tom acima para 4,5:1 */
+  --on-accent: #0d0e10;
+
+  --ok: #a3c98f;
+  --warn: #d9b65a;
+  --danger: #d58264;
+
+  --cat-1: #e3ecd9;
+  --cat-6: #3a4733;
+  --serie-ganhos: #c2d3b0;
+  --serie-gastos: #5f7351;
+  --backdrop: rgb(0 0 0 / 0.65);
+  --shadow-pop: 0 1px 0 rgb(0 0 0 / 0.6), 0 18px 40px -18px rgb(0 0 0 / 0.7);
+}
+:root[data-theme="semdistracao"] ::selection { background: color-mix(in srgb, #d9b65a 35%, transparent); }
+
 /* ---------- Escuros com destaque: a cor de ação contrasta com a primária ---------- */
 
 /* ---------- Noturno: azul-ardósia, ação em coral (par escuro do Clareza) ---------- */
