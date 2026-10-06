@@ -10,7 +10,7 @@
    Troque VERSAO ao publicar mudanças na lista de arquivos.
    ============================================ */
 
-const VERSAO = 'datalife-v1';
+const VERSAO = 'datalife-v2';
 const SDK = 'https://www.gstatic.com/firebasejs/';
 const SHELL = [
   './',
@@ -69,6 +69,7 @@ const SHELL = [
   './js/exercicios.js',
   './js/firebase-init.js',
   './js/foco-db.js',
+  './js/foco-historico.js',
   './js/foco-notas.js',
   './js/foco-pomodoro.js',
   './js/foco-quadro.js',

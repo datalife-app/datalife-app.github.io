@@ -1,12 +1,18 @@
 /* ============================================
    DataLife — Lista de compras: persistência e corredores
    ============================================
-   users/{uid}/compras/lista   um documento só:
+   users/{uid}/compras/lista          configuração
+     { frequentes: [ {nome, cat, n} ],   // o que você costuma comprar
+       alimentacao: centavos }          // VR/VA ou quanto separa para o mercado, por mês
+   users/{uid}/compras/{YYYY-MM-DD}   a lista de um dia
      { itens: [ {id, nome, qtd, cat, feito, preco?} ],
-       frequentes: [ {nome, cat, n} ] }   // o que você costuma comprar
+       gasto: centavos }                // compras já concluídas neste dia
+
+   Antes, os itens ficavam em compras/lista: na primeira leitura, eles
+   passam para a lista de hoje (fetchConfig devolve `legado`).
    ============================================ */
 
-import { fs, LOCAL_MODE, ref, lsRead, lsWrite, isId, isText, isCents } from './store.js';
+import { fs, LOCAL_MODE, ref, col, lsRead, lsWrite, lsList, isId, isText, isCents, DAY_RE, commitInBatches } from './store.js';
 
 export const LIMITES = { itens: 300, frequentes: 150, nome: 60, qtd: 20 };
 
@@ -67,12 +73,39 @@ function sanitizeFreq(f) {
   return { nome: f.nome.trim(), cat: CAT_IDS.has(f.cat) ? f.cat : 'outros', n: Number.isInteger(f.n) && f.n > 0 ? Math.min(f.n, 9999) : 1 };
 }
 
-export function sanitizeLista(raw) {
+const itensDe = raw => (Array.isArray(raw?.itens) ? raw.itens.map(sanitizeItem).filter(Boolean).slice(0, LIMITES.itens) : []);
+
+export function sanitizeConfig(raw) {
   return {
-    itens: Array.isArray(raw?.itens) ? raw.itens.map(sanitizeItem).filter(Boolean).slice(0, LIMITES.itens) : [],
-    frequentes: Array.isArray(raw?.frequentes) ? raw.frequentes.map(sanitizeFreq).filter(Boolean).slice(0, LIMITES.frequentes) : []
+    frequentes: Array.isArray(raw?.frequentes) ? raw.frequentes.map(sanitizeFreq).filter(Boolean).slice(0, LIMITES.frequentes) : [],
+    alimentacao: isCents(raw?.alimentacao) ? raw.alimentacao : 0
   };
 }
+
+export function sanitizeDia(raw) {
+  return { itens: itensDe(raw), gasto: isCents(raw?.gasto) ? raw.gasto : 0 };
+}
+
+/* ---------- Semana e orçamento ---------- */
+
+const pad = n => String(n).padStart(2, '0');
+const chave = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+/** Domingo a sábado da semana de um dia. */
+export function semanaDe(dia) {
+  const [y, m, d] = dia.split('-').map(Number);
+  const ini = new Date(y, m - 1, d - new Date(y, m - 1, d).getDay());
+  return Array.from({ length: 7 }, (_, i) => chave(new Date(ini.getFullYear(), ini.getMonth(), ini.getDate() + i)));
+}
+
+/** Semanas do mês do dia (dias do mês ÷ 7: 4,0 a 4,4). */
+export function semanasNoMes(dia) {
+  const [y, m] = dia.split('-').map(Number);
+  return new Date(y, m, 0).getDate() / 7;
+}
+
+/** Quanto foi gasto num dia: compras concluídas + itens com preço já no carrinho. */
+export const gastoDoDia = d => d.gasto + d.itens.filter(i => i.feito && i.preco).reduce((a, i) => a + i.preco, 0);
 
 /** Itens comprados entram (ou somam) nos frequentes; os mais comprados ficam no topo. */
 export function registrarComprados(frequentes, comprados) {
@@ -87,29 +120,82 @@ export function registrarComprados(frequentes, comprados) {
 
 /* ---------- API ---------- */
 
-export async function fetchLista(uid) {
+/** Configuração (+ itens do formato antigo, a migrar para hoje). */
+export async function fetchConfig(uid) {
   const raw = LOCAL_MODE
     ? lsRead('compras/lista')
     : await fs.getDoc(ref(uid, 'compras', 'lista')).then(s => (s.exists() ? s.data() : null));
-  return sanitizeLista(raw);
+  return { ...sanitizeConfig(raw), legado: itensDe(raw) };
 }
 
-export async function saveLista(uid, lista) {
-  const clean = sanitizeLista(lista);
+export async function saveConfig(uid, config) {
+  const clean = sanitizeConfig(config);
   if (LOCAL_MODE) return lsWrite('compras/lista', clean);
-  await fs.setDoc(ref(uid, 'compras', 'lista'), clean);
+  await fs.setDoc(ref(uid, 'compras', 'lista'), clean); // sem `itens`: o formato antigo sai aqui
+}
+
+export async function fetchDia(uid, dia) {
+  if (!DAY_RE.test(dia)) throw new Error('Dia inválido');
+  const raw = LOCAL_MODE
+    ? lsRead(`compras/${dia}`)
+    : await fs.getDoc(ref(uid, 'compras', dia)).then(s => (s.exists() ? s.data() : null));
+  return sanitizeDia(raw);
+}
+
+/** Dias com lista entre duas datas: Map(dia -> {itens, gasto}). Uma consulta. */
+export async function fetchDias(uid, de, ate) {
+  const entries = LOCAL_MODE
+    ? lsList('compras').filter(([k]) => DAY_RE.test(k) && k >= de && k <= ate)
+    : (await fs.getDocs(fs.query(col(uid, 'compras'), fs.where(fs.documentId(), '>=', de), fs.where(fs.documentId(), '<=', ate))))
+      .docs.map(d => [d.id, d.data()]).filter(([k]) => DAY_RE.test(k));
+  return new Map(entries.map(([k, raw]) => [k, sanitizeDia(raw)]));
+}
+
+export async function saveDia(uid, dia, dados) {
+  if (!DAY_RE.test(dia)) throw new Error('Dia inválido');
+  const clean = sanitizeDia(dados);
+  if (LOCAL_MODE) return lsWrite(`compras/${dia}`, clean);
+  await fs.setDoc(ref(uid, 'compras', dia), clean);
 }
 
 /* ---------- Backup ---------- */
 
-export const exportCompras = fetchLista;
-export const parseCompras = json => (json && typeof json === 'object' ? sanitizeLista(json) : null);
-/** Mescla: itens com id novo entram; frequentes somam. */
+export async function exportCompras(uid) {
+  const [cfg, docs] = await Promise.all([
+    fetchConfig(uid),
+    LOCAL_MODE ? lsList('compras') : fs.getDocs(col(uid, 'compras')).then(q => q.docs.map(d => [d.id, d.data()]))
+  ]);
+  const dias = docs.filter(([k]) => DAY_RE.test(k)).map(([key, raw]) => ({ key, ...sanitizeDia(raw) })).filter(d => d.itens.length || d.gasto);
+  return { frequentes: cfg.frequentes, alimentacao: cfg.alimentacao, dias };
+}
+
+/** Aceita o formato novo e o antigo ({itens, frequentes}: os itens vão para hoje). */
+export function parseCompras(json) {
+  if (!json || typeof json !== 'object') return null;
+  const cfg = sanitizeConfig(json);
+  const dias = Array.isArray(json.dias) ? json.dias.filter(d => DAY_RE.test(d?.key)).map(d => ({ key: d.key, ...sanitizeDia(d) })) : [];
+  const legado = itensDe(json);
+  if (legado.length) dias.push({ key: chave(new Date()), itens: legado, gasto: 0 });
+  return { ...cfg, itens: dias.flatMap(d => d.itens), dias };
+}
+
+/** Mescla: itens com id novo entram em cada dia; frequentes somam; a alimentação só entra se não houver. */
 export async function importCompras(uid, parsed) {
-  const atual = await fetchLista(uid);
-  const ids = new Set(atual.itens.map(i => i.id));
-  const novos = parsed.itens.filter(i => !ids.has(i.id));
+  const atual = await fetchConfig(uid);
   const frequentes = registrarComprados(atual.frequentes, parsed.frequentes.flatMap(f => Array(Math.min(f.n, 50)).fill(f)));
-  await saveLista(uid, { itens: [...atual.itens, ...novos], frequentes });
-  return novos.length;
+  await saveConfig(uid, { frequentes, alimentacao: atual.alimentacao || parsed.alimentacao });
+  let novos = 0;
+  const ops = [];
+  for (const d of parsed.dias) {
+    const cur = await fetchDia(uid, d.key);
+    const ids = new Set(cur.itens.map(i => i.id));
+    const add = d.itens.filter(i => !ids.has(i.id));
+    if (!add.length && !d.gasto) continue;
+    novos += add.length;
+    const dados = { itens: [...cur.itens, ...add].slice(0, LIMITES.itens), gasto: Math.max(cur.gasto, d.gasto) };
+    if (LOCAL_MODE) lsWrite(`compras/${d.key}`, dados);
+    else ops.push([ref(uid, 'compras', d.key), dados]);
+  }
+  if (ops.length) await commitInBatches(ops);
+  return novos;
 }

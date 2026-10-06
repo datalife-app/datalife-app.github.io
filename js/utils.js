@@ -85,37 +85,38 @@ export function icon(name, size = 18) {
 }
 
 // faixa: [mín, máx] recomendados (%) · inclui/porque: nota exibida ao definir a meta ·
+// exemplo: sugestão no campo Descrição do lançamento ·
 // corte: prioridade para reduzir quando a soma passa de 100% (1 = cortar primeiro).
 //   Custos fixos por último: aluguel e contas não caem de um mês para o outro.
 // cor: tokens --cat-N do tema (rampa clara -> escura); a ordem do gráfico segue esta lista.
 export const CATEGORIAS = [
   {
-    id: 'custosFixos', nome: 'Custos fixos', cor: 'var(--cat-1)', icon: 'home', meta: 30, faixa: [0, 40], corte: 6,
+    id: 'custosFixos', nome: 'Custos fixos', cor: 'var(--cat-1)', icon: 'home', meta: 30, faixa: [0, 40], corte: 6, exemplo: 'Aluguel',
     inclui: 'Aluguel ou financiamento, condomínio, contas de casa, mercado, transporte, saúde.',
     porque: 'No máximo 40%: acima disso o risco de descontrole é enorme, e qualquer imprevisto vira dívida.'
   },
   {
-    id: 'conforto', nome: 'Conforto', cor: 'var(--cat-2)', icon: 'sofa', meta: 15, faixa: [0, 15], corte: 1,
+    id: 'conforto', nome: 'Conforto', cor: 'var(--cat-2)', icon: 'sofa', meta: 15, faixa: [0, 15], corte: 1, exemplo: 'Delivery',
     inclui: 'O que vai além do necessário: carro mais caro do que precisa, delivery, app de transporte, assinaturas.',
     porque: 'Deixa a rotina mais leve, e é o primeiro lugar para cortar num mês apertado.'
   },
   {
-    id: 'metas', nome: 'Metas', cor: 'var(--cat-3)', icon: 'target', meta: 15, faixa: [10, 25], corte: 2,
+    id: 'metas', nome: 'Metas', cor: 'var(--cat-3)', icon: 'target', meta: 15, faixa: [10, 25], corte: 2, exemplo: 'Viagem de fim de ano',
     inclui: 'Viagens, presentes de fim de ano, troca de carro, reserva de emergência.',
     porque: 'Um percentual fixo faz seus objetivos avançarem todo mês. Guarde onde resgata na hora, mas rende mais que a poupança. Se aumentar Prazeres, diminua aqui.'
   },
   {
-    id: 'prazeres', nome: 'Prazeres', cor: 'var(--cat-4)', icon: 'wine', meta: 10, faixa: [5, 10], corte: 4,
+    id: 'prazeres', nome: 'Prazeres', cor: 'var(--cat-4)', icon: 'wine', meta: 10, faixa: [5, 10], corte: 4, exemplo: 'Churrasco com os amigos',
     inclui: 'Cerveja, churrasco, refrigerante, restaurantes, passeios, hobbies.',
     porque: 'Até 10%: lazer planejado não pesa na consciência e, com as metas, mantém a qualidade de vida. Não tire daqui para aumentar outras partes.'
   },
   {
-    id: 'liberdade', nome: 'Liberdade financeira', cor: 'var(--cat-5)', icon: 'trending', meta: 25, faixa: [15, 100], corte: 5,
+    id: 'liberdade', nome: 'Liberdade financeira', cor: 'var(--cat-5)', icon: 'trending', meta: 25, faixa: [15, 100], corte: 5, exemplo: 'Aporte no Tesouro Direto',
     inclui: 'Investimentos de longo prazo, previdência, aposentadoria.',
     porque: '25% por 4 anos garante 1 ano do seu eu do futuro. Não tire daqui para aumentar outras partes; quanto mais, melhor.'
   },
   {
-    id: 'conhecimento', nome: 'Conhecimento', cor: 'var(--cat-6)', icon: 'cap', meta: 5, faixa: [3, 100], corte: 3,
+    id: 'conhecimento', nome: 'Conhecimento', cor: 'var(--cat-6)', icon: 'cap', meta: 5, faixa: [3, 100], corte: 3, exemplo: 'Curso de inglês',
     inclui: 'Cursos, livros, certificações, idiomas.',
     porque: 'Investir em você tende a aumentar sua renda, e isso melhora todas as outras metas. Não há teto.'
   }
@@ -361,6 +362,26 @@ export function placeFixed(pop, left, top) {
   }
   pop.style.left = `${left - x}px`;
   pop.style.top = `${top - y}px`;
+}
+
+/**
+ * Letreiro: texto que não cabe na largura desliza devagar até o fim e volta,
+ * para ser lido inteiro. Só anima o que de fato transborda; com "reduzir
+ * movimento" no sistema, fica parado (o title continua mostrando tudo).
+ * Uso: <span class="letreiro"><span>texto</span></span> dentro de um bloco estreito.
+ */
+export function letreiros(root = document) {
+  for (const el of root.querySelectorAll('.letreiro')) {
+    const txt = el.firstElementChild;
+    if (!txt) continue;
+    const sobra = txt.scrollWidth - el.clientWidth;
+    el.classList.toggle('is-andando', sobra > 2);
+    if (sobra > 2) {
+      el.style.setProperty('--letreiro-x', `${-sobra}px`);
+      // ~30 px/s, com pausas nas pontas (no keyframe)
+      el.style.setProperty('--letreiro-t', `${Math.max(4, sobra / 30 + 3).toFixed(1)}s`);
+    }
+  }
 }
 
 /** Baixa um arquivo gerado no navegador. */

@@ -101,7 +101,24 @@
 .hub-head p { color: var(--text-muted); margin-top: 6px; }
 
 .tool-list { list-style: none; display: flex; flex-direction: column; gap: 28px; margin-bottom: 16px; }
-.tool-group-title { margin-bottom: 10px; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
+.tool-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.tool-group-title { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
+.tool-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.tool-mini svg { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .tool-mini:hover { border-color: var(--p-300); color: var(--text); }
+}
 .tool-grid {
   list-style: none;
   display: grid;

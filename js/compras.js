@@ -5,36 +5,61 @@
    na ordem do mercado, categoria automática ao digitar, sugestões pelo
    histórico, "de sempre" a um toque, preço opcional com total estimado.
    Feito para o celular: linhas grandes, toque marca "no carrinho".
+   Uma lista por dia (o dia da compra) e o orçamento da semana: o valor
+   mensal de alimentação (VR/VA) ÷ semanas do mês, contra o que já foi
+   gasto de domingo a sábado.
    ============================================ */
 
 import { requireAuth } from './auth.js';
 import { initPagina, persist, dadosProntos } from './pagina.js';
-import { fetchLista, saveLista, CORREDORES, corredorDe, separarQtd, registrarComprados, LIMITES } from './compras-db.js';
+import {
+  fetchConfig, saveConfig, fetchDia, fetchDias, saveDia, semanaDe, semanasNoMes, gastoDoDia,
+  CORREDORES, corredorDe, separarQtd, registrarComprados, LIMITES
+} from './compras-db.js';
 import { enhanceSuggest, enhanceSelect } from './selectpicker.js';
-import { icon, escapeHtml, showToast, uid, formatBRL, formatBRLRaw, parseBRL, bindCurrencyInput, debounce } from './utils.js';
+import { icon, escapeHtml, showToast, uid, formatBRL, formatBRLRaw, parseBRL, bindCurrencyInput, debounce, dayKey, shiftDay, fromDayKey, MESES } from './utils.js';
 
 const $ = id => document.getElementById(id);
 const user = await requireAuth();
 
-let lista = { itens: [], frequentes: [] };
+const SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const hoje = () => dayKey(new Date());
+let dia = hoje();
+// `lista` = a lista do dia aberto + os frequentes (configuração), como antes
+let lista = { itens: [], gasto: 0, frequentes: [] };
+let config = { frequentes: [], alimentacao: 0 };
+const dias = new Map(); // cache: dia -> {itens, gasto} (semana do orçamento)
 let editando = null;
 let novoId = null;
+let editandoOrc = false;
 
-/* ---------- Gravação (lista pequena, um documento) ---------- */
+/* ---------- Gravação ---------- */
 
+// Lista do dia: um documento por dia, com debounce
 let anterior = null;
 const gravar = debounce(() => {
-  const snap = structuredClone(lista);
+  const d = dia, snap = { itens: structuredClone(lista.itens), gasto: lista.gasto };
   const volta = anterior;
   anterior = null;
-  persist(saveLista(user.uid, snap), () => { if (volta) { lista = volta; render(); } });
+  dias.set(d, snap);
+  persist(saveDia(user.uid, d, snap), () => { if (volta && d === dia) { lista = { ...lista, ...volta }; render(); } });
 }, 400);
 
 function mudar(fn) {
-  anterior ??= structuredClone(lista);
+  anterior ??= { itens: structuredClone(lista.itens), gasto: lista.gasto };
   fn();
+  dias.set(dia, { itens: lista.itens, gasto: lista.gasto });
   render();
   gravar();
+}
+
+/** Frequentes e alimentação (configuração). */
+function salvarConfig(next) {
+  const prev = config;
+  config = { ...config, ...next };
+  lista.frequentes = config.frequentes;
+  render();
+  return persist(saveConfig(user.uid, config), () => { config = prev; lista.frequentes = prev.frequentes; render(); });
 }
 
 /* ---------- Tela ---------- */
@@ -54,7 +79,61 @@ function linha(i) {
     </li>`;
 }
 
+const fmtDia = k => { const d = fromDayKey(k); return `${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()}`; };
+
+function renderDia() {
+  const h = hoje();
+  $('dia-label').textContent = fmtDia(dia);
+  $('dia-sub').textContent = dia === h ? `Hoje, ${SEMANA[fromDayKey(dia).getDay()]}` : dia === shiftDay(h, 1) ? 'Amanhã' : dia === shiftDay(h, -1) ? 'Ontem' : SEMANA[fromDayKey(dia).getDay()];
+  $('dia-hoje').hidden = dia === h;
+}
+
+/** Orçamento da semana: alimentação do mês ÷ semanas do mês, contra o gasto de domingo a sábado. */
+function renderOrcamento() {
+  const el = $('orc-semana');
+  const semana = semanaDe(dia);
+  const nSem = semanasNoMes(dia);
+  if (!config.alimentacao || editandoOrc) {
+    el.innerHTML = `
+      <form class="orc-form" id="orc-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Quanto você recebe de VR/VA por mês (ou separa para alimentação)?</span>
+          <input class="input num" name="valor" inputmode="numeric" placeholder="R$ 0,00" maxlength="22" value="${config.alimentacao ? formatBRLRaw(config.alimentacao) : ''}">
+        </label>
+        <button class="btn btn-primary" type="submit">Calcular a semana</button>
+        ${config.alimentacao ? '<button class="btn btn-ghost" type="button" data-orc-cancelar>Cancelar</button>' : ''}
+      </form>`;
+    bindCurrencyInput($('orc-form').valor);
+    return;
+  }
+  const limite = Math.round(config.alimentacao / nSem);
+  const lida = semana.every(k => dias.has(k));
+  const gasto = semana.reduce((a, k) => a + (dias.has(k) ? gastoDoDia(dias.get(k)) : 0), 0);
+  const resta = limite - gasto;
+  const pct = limite ? Math.min(1, gasto / limite) : 0;
+  const ini = fromDayKey(semana[0]), fim = fromDayKey(semana[6]);
+  el.innerHTML = `
+    <div class="orc-card ${resta < 0 ? 'is-acima' : ''}">
+      <div class="orc-topo">
+        <div>
+          <span class="orc-rotulo">Pode gastar nesta semana</span>
+          <strong class="orc-valor num">${formatBRL(limite)}</strong>
+          <span class="orc-sub">${formatBRL(config.alimentacao)} no mês ÷ ${nSem.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} semanas · ${ini.getDate()}/${ini.getMonth() + 1} a ${fim.getDate()}/${fim.getMonth() + 1}</span>
+        </div>
+        <button class="link-btn" type="button" data-orc-editar>Mudar valor</button>
+      </div>
+      <div class="orc-bar" role="img" aria-label="Gasto ${formatBRL(gasto)} de ${formatBRL(limite)}"><i style="transform:scaleX(${pct})"></i></div>
+      <div class="orc-linha">
+        <span>Gasto na semana <strong class="num">${lida ? formatBRL(gasto) : '…'}</strong></span>
+        <span>${resta >= 0 ? 'Ainda pode' : 'Passou'} <strong class="num">${formatBRL(Math.abs(resta))}</strong></span>
+      </div>
+      <p class="orc-dica">Conta as compras concluídas e os itens com preço no carrinho.</p>
+    </div>`;
+}
+
 function render() {
+  renderDia();
+  renderOrcamento();
   const pendentes = lista.itens.filter(i => !i.feito);
   const feitos = lista.itens.filter(i => i.feito);
   const ja = nomes();
@@ -113,14 +192,17 @@ function adicionar(texto) {
 function concluir() {
   const feitos = lista.itens.filter(i => i.feito);
   if (!feitos.length) return;
-  const antes = structuredClone(lista);
+  const antes = { itens: structuredClone(lista.itens), gasto: lista.gasto };
+  const freqAntes = config.frequentes;
+  const total = feitos.reduce((a, i) => a + (i.preco || 0), 0);
   mudar(() => {
     lista.itens = lista.itens.filter(i => !i.feito);
-    lista.frequentes = registrarComprados(lista.frequentes, feitos);
+    lista.gasto += total; // o que custou fica no dia, para o orçamento da semana
   });
-  showToast(`Compra concluída: ${feitos.length} ${feitos.length === 1 ? 'item' : 'itens'}.`, 'success', 6000, {
+  salvarConfig({ frequentes: registrarComprados(config.frequentes, feitos) });
+  showToast(`Compra concluída: ${feitos.length} ${feitos.length === 1 ? 'item' : 'itens'}${total ? `, ${formatBRL(total)}` : ''}.`, 'success', 6000, {
     label: 'Desfazer',
-    onClick: () => mudar(() => { lista = antes; })
+    onClick: () => { mudar(() => { lista.itens = antes.itens; lista.gasto = antes.gasto; }); salvarConfig({ frequentes: freqAntes }); }
   });
 }
 
@@ -141,6 +223,22 @@ function bind() {
     if (b) adicionar(b.dataset.sempre);
   });
   $('btn-limpar').addEventListener('click', concluir);
+  $('dia-prev').innerHTML = icon('chevronLeft');
+  $('dia-next').innerHTML = icon('chevronRight');
+  $('dia-prev').addEventListener('click', () => abrirDia(shiftDay(dia, -1)));
+  $('dia-next').addEventListener('click', () => abrirDia(shiftDay(dia, 1)));
+  $('dia-hoje').addEventListener('click', () => abrirDia(hoje()));
+  $('orc-semana').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = parseBRL(e.target.valor.value);
+    if (!v) return e.target.valor.focus();
+    editandoOrc = false;
+    salvarConfig({ alimentacao: v });
+  });
+  $('orc-semana').addEventListener('click', e => {
+    if (e.target.closest('[data-orc-editar]')) { editandoOrc = true; renderOrcamento(); $('orc-form').valor.focus(); }
+    if (e.target.closest('[data-orc-cancelar]')) { editandoOrc = false; renderOrcamento(); }
+  });
 
   $('lista').addEventListener('click', e => {
     const li = e.target.closest('[data-id]');
@@ -191,10 +289,54 @@ function abrir(item) {
   $('item-dialog').showModal();
 }
 
+/** Abre a lista de outro dia (e lê a semana dele para o orçamento). */
+let seqDia = 0;
+async function abrirDia(k) {
+  gravar.flush();
+  const seq = ++seqDia;
+  const main = $('view-compras');
+  const travada = main.inert; // na abertura, a trava geral (pagina.js) ainda está ligada
+  main.inert = true;
+  try {
+    const semana = semanaDe(k);
+    const faltam = semana.filter(x => !dias.has(x));
+    if (faltam.length) {
+      const lidos = await fetchDias(user.uid, semana[0], semana[6]);
+      for (const x of semana) if (!dias.has(x)) dias.set(x, lidos.get(x) || { itens: [], gasto: 0 });
+    }
+    if (!dias.has(k)) dias.set(k, await fetchDia(user.uid, k));
+    if (seq !== seqDia) return;
+    dia = k;
+    const d = dias.get(k);
+    lista = { itens: structuredClone(d.itens), gasto: d.gasto, frequentes: config.frequentes };
+    render();
+    main.inert = travada;
+    return true;
+  } catch (e) {
+    console.error(e);
+    showToast('Não foi possível abrir esse dia. Verifique a conexão.', 'error', 5000);
+    // Continua na lista que já estava na tela (a do dia anterior, intacta);
+    // na abertura, segue travada: a lista vazia gravaria por cima da real
+    main.inert = travada;
+    return false;
+  }
+}
+
 initPagina();
 bind();
 try {
-  lista = await fetchLista(user.uid);
+  const cfg = await fetchConfig(user.uid);
+  config = { frequentes: cfg.frequentes, alimentacao: cfg.alimentacao };
+  if (!(await abrirDia(dia))) throw new Error('lista do dia não lida');
+  // Formato antigo: os itens de compras/lista passam para a lista de hoje (uma vez)
+  if (cfg.legado.length) {
+    const ids = new Set(lista.itens.map(i => i.id));
+    lista.itens = [...lista.itens, ...cfg.legado.filter(i => !ids.has(i.id))].slice(0, LIMITES.itens);
+    // Primeiro grava os itens no dia; só depois tira do formato antigo (sem risco de perder)
+    await saveDia(user.uid, dia, { itens: lista.itens, gasto: lista.gasto });
+    dias.set(dia, { itens: lista.itens, gasto: lista.gasto });
+    await saveConfig(user.uid, config);
+  }
   dadosProntos();
 } catch (e) {
   console.error(e);

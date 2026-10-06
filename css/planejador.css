@@ -58,6 +58,7 @@
   text-overflow: ellipsis;
 }
 .cal-ev .num { color: var(--text-muted); flex-shrink: 0; }
+.cal-ev .letreiro { flex: 1 1 auto; }
 .cal-ev.tipo-aniversario { border-left-color: var(--p-100); }
 .cal-ev.tipo-prazo { border-left-color: var(--warn); }
 .cal-ev.tipo-saude { border-left-color: var(--ok); }
@@ -139,7 +140,9 @@
   transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
 .tipo-chip[aria-checked="true"] { border-color: var(--accent); background: var(--tint); color: var(--text); font-weight: 600; }
-.hora-pick { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
+.hora-pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); gap: 8px; }
+.hora-pick.is-dia { grid-template-columns: minmax(0, 1fr); }
+.hora-pick.is-dia [name="m"] + .sp-trigger { display: none; }
 
 /* ---------- Responsivo ---------- */
 @media (max-width: 1000px) {

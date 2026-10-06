@@ -232,13 +232,16 @@ function renderDesafio() {
     'no-ritmo': 'No ritmo da meta.',
     atrasado: ritmoMeta
   }[d.status];
-  const nota = d.status === 'atrasado'
-    ? `Pelo ritmo da meta, seriam ${plural(d.esperado, 'livro', 'livros')} até hoje (a marca no anel).`
-    : d.falta ? `Faltam ${d.falta}${cada ? `: um a cada ${plural(cada, 'dia', 'dias')}` : ''}.` : '';
+  // Fato direto (quanto falta e quanto tempo resta); o "onde a meta esperaria
+  // você hoje" fica na dica da marca do anel
+  const nota = !d.falta ? ''
+    : d.status === 'atrasado'
+      ? (diasRest ? `Faltam ${plural(d.falta, 'livro', 'livros')} e ${plural(diasRest, 'dia', 'dias')} até o fim do ano.` : `Faltam ${plural(d.falta, 'livro', 'livros')}.`)
+      : `Faltam ${plural(d.falta, 'livro', 'livros')}${cada ? `: um a cada ${plural(cada, 'dia', 'dias')}` : ''}.`;
   // Marca do ritmo esperado sobre o anel (ângulo a partir do topo, sentido horário)
   const ang = (Math.min(d.esperado, d.meta) / d.meta) * 2 * Math.PI - Math.PI / 2;
   const mark = d.status !== 'concluido' && d.esperado > 0
-    ? `<circle cx="${(40 + R * Math.cos(ang)).toFixed(2)}" cy="${(40 + R * Math.sin(ang)).toFixed(2)}" r="4" class="ring-mark"/>` : '';
+    ? `<circle cx="${(40 + R * Math.cos(ang)).toFixed(2)}" cy="${(40 + R * Math.sin(ang)).toFixed(2)}" r="4" class="ring-mark"><title>No ritmo da meta, hoje seriam ${plural(d.esperado, 'livro lido', 'livros lidos')}</title></circle>` : '';
   el.innerHTML = `${head}
     <div class="desafio-body">
       <div class="desafio-ring-wrap">

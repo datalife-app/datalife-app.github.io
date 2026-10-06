@@ -16,7 +16,7 @@ const TOOLS = [
   { grupo: 'Dinheiro', nome: 'Pagamentos', desc: 'As contas fixas do mês, o que já foi pago e um aviso antes de cada vencimento.', icon: 'receipt', href: 'bills.html' },
   { grupo: 'Dinheiro', nome: 'Objetivos', desc: 'Quanto guardar por mês para chegar lá no prazo, e se isso cabe no orçamento.', icon: 'flag', href: 'goals.html' },
   { grupo: 'Dinheiro', nome: 'Compras conscientes', desc: 'Anote o preço do que você quer comprar e descubra quando a oferta é real.', icon: 'tag', href: 'wishlist.html' },
-  { grupo: 'Dinheiro', nome: 'Conselhos', desc: 'Guias curtos para organizar o dinheiro, montar a reserva e fugir de juros e golpes.', icon: 'lightbulb', href: 'advice.html' },
+  { grupo: 'Dinheiro', nome: 'Conselhos', discreto: true, desc: 'Guias curtos para organizar o dinheiro, montar a reserva e fugir de juros e golpes.', icon: 'lightbulb', href: 'advice.html' },
   { grupo: 'Rotina', nome: 'Foco', desc: 'Um dia de cada vez: tarefas, notas, pomodoro, água e o quadro do que está andando.', icon: 'timer', href: 'focus.html' },
   { grupo: 'Rotina', nome: 'Planejador', desc: 'Datas que não podem passar, com aviso um mês antes, na semana e no próprio dia.', icon: 'calendarClock', href: 'planner.html' },
   { grupo: 'Rotina', nome: 'Lista de compras', desc: 'A lista do mercado já separada por corredor, com o que você sempre compra.', icon: 'cart', href: 'groceries.html' },
@@ -32,11 +32,16 @@ initPagina();
 dadosProntos(); // o Hub não lê dados (só os avisos, que não gravam nada)
 
 const grupos = [...new Set(TOOLS.map(t => t.grupo))];
+// Ferramentas "discretas" (Conselhos) viram um link pequeno ao lado do título do grupo
 document.getElementById('tool-list').innerHTML = grupos.map(g => `
   <li class="tool-group">
-    <h2 class="tool-group-title">${g}</h2>
+    <div class="tool-group-head">
+      <h2 class="tool-group-title">${g}</h2>
+      ${TOOLS.filter(t => t.grupo === g && t.discreto).map(t => `
+        <a class="tool-mini" href="${t.href}" title="${t.desc}">${icon(t.icon, 14)}<span>${t.nome}</span></a>`).join('')}
+    </div>
     <ul class="tool-grid">
-      ${TOOLS.filter(t => t.grupo === g).map(t => `
+      ${TOOLS.filter(t => t.grupo === g && !t.discreto).map(t => `
         <li>
           <a class="tool-card" href="${t.href}">
             <span class="tool-icon">${icon(t.icon, 20)}</span>

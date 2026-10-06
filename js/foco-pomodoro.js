@@ -72,6 +72,18 @@ export function alternar() {
   else iniciar();
 }
 
+/**
+ * "Estou fazendo" numa tarefa: o foco começa junto (se estiver numa pausa,
+ * pula para um foco novo). Parar a tarefa pausa o cronômetro.
+ */
+export function seguirTarefa(ligou) {
+  if (!s) return;
+  if (!ligou) return pausar();
+  if (s.fase !== 'foco') Object.assign(s, { fase: 'foco', status: 'parado', inicio: null, restante: null });
+  iniciar();
+  if (s.status === 'rodando') showToast('Pomodoro iniciado junto com a tarefa.');
+}
+
 function recomecar() {
   Object.assign(s, { status: 'parado', inicio: null, restante: null });
   gravar();

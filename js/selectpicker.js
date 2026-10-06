@@ -30,8 +30,14 @@ function position() {
   const { pop, trigger } = open;
   const r = trigger.getBoundingClientRect();
   pop.style.minWidth = `${r.width}px`;
-  const w = pop.offsetWidth, h = pop.offsetHeight;
-  const below = window.innerHeight - r.bottom >= h + 12 || r.top < h + 12;
+  pop.style.maxHeight = '';
+  const w = pop.offsetWidth;
+  let h = pop.offsetHeight;
+  const espacoAbaixo = window.innerHeight - r.bottom - 12, espacoAcima = r.top - 12;
+  const below = espacoAbaixo >= h || espacoAbaixo >= espacoAcima;
+  // Sem espaço inteiro em nenhum lado: encolhe (a lista rola por dentro)
+  const espaco = below ? espacoAbaixo : espacoAcima;
+  if (h > espaco) { pop.style.maxHeight = `${Math.max(120, espaco)}px`; h = pop.offsetHeight; }
   const left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
   placeFixed(pop, left, below ? r.bottom + 6 : r.top - h - 6);
   pop.style.transformOrigin = `${r.left - left + r.width / 2}px ${below ? 'top' : 'bottom'}`;

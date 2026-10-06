@@ -21,7 +21,9 @@ import {
   fs, LOCAL_MODE, ref, col, commitInBatches, lsRead, lsWrite, lsList, isId, DAY_RE
 } from './store.js';
 
-export const LIMITES = { tarefas: 200, texto: 280, notas: 10, titulo: 60, nota: 20000, copos: 40, pomodoros: 500 };
+export const LIMITES = { tarefas: 200, texto: 280, notas: 10, titulo: 60, nota: 20000, copos: 40, pomodoros: 500, fixas: 30, geradas: 60 };
+// Tarefa criada sozinha: 'fixa:<id>' (tarefas fixas) ou 'livro:<id>' (livro em leitura)
+export const ORIGEM_RE = /^(fixa|livro):[\w-]{1,64}$/;
 export const REFEICOES = [
   { id: 'cafe', nome: 'Café da manhã', quando: 'Manhã', porque: 'Comece o dia com energia' },
   { id: 'almoco', nome: 'Almoço', quando: 'Tarde', porque: 'A refeição principal do dia' },
@@ -42,6 +44,7 @@ function sanitizeTarefa(t) {
   const clean = { id, texto, feita, criada };
   if (feita && isTime(concluida)) clean.concluida = concluida;
   if (!feita && t.fazendo === true) clean.fazendo = true; // "Fazendo" no Quadro
+  if (typeof t.origem === 'string' && ORIGEM_RE.test(t.origem)) clean.origem = t.origem;
   return clean;
 }
 
@@ -55,7 +58,7 @@ function sanitizeNota(n) {
 const list = (v, fn, max) => (Array.isArray(v) ? v.map(fn).filter(Boolean).slice(0, max) : []);
 
 export function diaVazio() {
-  return { tarefas: [], notas: [], agua: [], refeicoes: { cafe: false, almoco: false, janta: false }, exercicio: false, pomodoros: 0 };
+  return { tarefas: [], notas: [], agua: [], refeicoes: { cafe: false, almoco: false, janta: false }, exercicio: false, pomodoros: 0, geradas: [] };
 }
 
 function sanitizeDia(raw) {
@@ -67,8 +70,12 @@ function sanitizeDia(raw) {
   for (const r of REFEICOES) dia.refeicoes[r.id] = raw.refeicoes?.[r.id] === true;
   dia.exercicio = raw.exercicio === true;
   dia.pomodoros = isInt(raw.pomodoros, 0, LIMITES.pomodoros) ? raw.pomodoros : 0;
+  dia.geradas = limparGeradas(raw.geradas);
   return dia;
 }
+
+/** Tarefas automáticas já criadas neste dia (apagar uma não faz ela voltar). */
+const limparGeradas = v => (Array.isArray(v) ? [...new Set(v.filter(x => typeof x === 'string' && ORIGEM_RE.test(x)))].slice(-LIMITES.geradas) : []);
 
 /** Valida um campo antes de gravar; lança se vier algo inesperado. */
 function cleanCampo(campo, valor) {
@@ -90,6 +97,8 @@ function cleanCampo(campo, valor) {
       return Object.fromEntries(REFEICOES.map(r => [r.id, valor?.[r.id] === true]));
     case 'exercicio':
       return valor === true;
+    case 'geradas':
+      return limparGeradas(valor);
     default:
       throw new Error(`Campo desconhecido: ${campo}`);
   }
@@ -112,7 +121,19 @@ function sanitizeConfig(raw) {
   const agua = a && isInt(a.peso, 25, 250)
     ? { peso: a.peso, exercicio: a.exercicio === true, calor: a.calor === true }
     : null;
-  return { pomodoro, agua };
+  return { pomodoro, agua, fixas: limparFixas(raw?.fixas) };
+}
+
+/** Tarefas fixas: texto + dias da semana (0 = domingo). */
+export function limparFixas(v) {
+  return Array.isArray(v)
+    ? v.filter(f => f && isId(f.id) && isStr(f.texto, LIMITES.texto) && f.texto.trim())
+      .map(f => {
+        const dias = Array.isArray(f.dias) ? [...new Set(f.dias.filter(d => isInt(d, 0, 6)))].sort() : [];
+        return { id: f.id, texto: f.texto.trim(), dias: dias.length ? dias : [0, 1, 2, 3, 4, 5, 6] };
+      })
+      .slice(0, LIMITES.fixas)
+    : [];
 }
 
 /* ---------- API ---------- */
@@ -156,15 +177,17 @@ export async function addPomodoro(uid, key) {
   await fs.setDoc(ref(uid, 'foco', key), { pomodoros: fs.increment(1) }, { merge: true });
 }
 
+const lerConfigCrua = async uid => (LOCAL_MODE
+  ? lsRead('settings/foco')
+  : await fs.getDoc(ref(uid, 'settings', 'foco')).then(s => (s.exists() ? s.data() : null)));
+
 export async function fetchConfig(uid) {
-  if (LOCAL_MODE) return sanitizeConfig(lsRead('settings/foco'));
-  const snap = await fs.getDoc(ref(uid, 'settings', 'foco'));
-  return sanitizeConfig(snap.exists() ? snap.data() : null);
+  return sanitizeConfig(await lerConfigCrua(uid));
 }
 
 export async function saveConfig(uid, config) {
   const clean = sanitizeConfig(config);
-  const data = clean.agua ? clean : { pomodoro: clean.pomodoro };
+  const data = { pomodoro: clean.pomodoro, ...(clean.agua ? { agua: clean.agua } : {}), ...(clean.fixas.length ? { fixas: clean.fixas } : {}) };
   if (LOCAL_MODE) return lsWrite('settings/foco', data);
   await fs.setDoc(ref(uid, 'settings', 'foco'), data);
 }
@@ -211,17 +234,27 @@ export async function importFoco(uid, parsed) {
     const idsN = new Set(cur.notas.map(n => n.id));
     const tarefas = [...cur.tarefas, ...dia.tarefas.filter(t => !idsT.has(t.id))].slice(0, LIMITES.tarefas);
     const notas = [...cur.notas, ...dia.notas.filter(n => !idsN.has(n.id))].slice(0, LIMITES.notas);
-    if (tarefas.length !== cur.tarefas.length || notas.length !== cur.notas.length) writes.push([key, { tarefas, notas }]);
+    const geradas = limparGeradas([...cur.geradas, ...dia.geradas]);
+    if (tarefas.length !== cur.tarefas.length || notas.length !== cur.notas.length || geradas.length !== cur.geradas.length) {
+      writes.push([key, { tarefas, notas, geradas }]);
+    }
+  }
+
+  // Configuração: num banco sem ajustes, vale a do arquivo; com ajustes, eles ficam
+  // e só entram as tarefas fixas que ainda não existem (um backup antigo não apaga as atuais)
+  const crua = await lerConfigCrua(uid);
+  let config = parsed.config;
+  if (crua) {
+    const atual = sanitizeConfig(crua);
+    const ids = new Set(atual.fixas.map(f => f.id));
+    config = { ...atual, agua: atual.agua || parsed.config.agua, fixas: [...atual.fixas, ...parsed.config.fixas.filter(f => !ids.has(f.id))].slice(0, LIMITES.fixas) };
   }
 
   if (LOCAL_MODE) {
     for (const [key, data] of writes) lsWrite(`foco/${key}`, { ...(atuais.get(key) || diaVazio()), ...data, key: undefined });
-    lsWrite('settings/foco', parsed.config);
-    return writes.length;
+  } else if (writes.length) {
+    await commitInBatches(writes.map(([key, data]) => [ref(uid, 'foco', key), data, { merge: true }]));
   }
-  await commitInBatches([
-    ...writes.map(([key, data]) => [ref(uid, 'foco', key), data, { merge: true }]),
-    [ref(uid, 'settings', 'foco'), parsed.config.agua ? parsed.config : { pomodoro: parsed.config.pomodoro }]
-  ]);
+  await saveConfig(uid, config);
   return writes.length;
 }

@@ -35,6 +35,7 @@
       <nav class="tabs" role="tablist" aria-label="Vistas do Foco">
         <a href="#day" class="tab" data-tab="dia" role="tab">Meu dia</a>
         <a href="#board" class="tab" data-tab="quadro" role="tab">Quadro</a>
+        <a href="#history" class="tab" data-tab="historico" role="tab">Histórico</a>
         <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
       </nav>
       <div class="topbar-right">
@@ -53,7 +54,7 @@
         <h1>Foco</h1>
         <p>O dia numa tela só: tarefas, notas, pomodoro e saúde.</p>
       </div>
-      <div class="page-head-actions">
+      <div class="page-head-actions" id="foco-dia-nav">
         <div class="month-nav day-nav">
           <button class="icon-btn" id="day-prev" type="button" aria-label="Dia anterior"></button>
           <div class="day-label" aria-live="polite">
@@ -86,6 +87,7 @@
         <form class="tarefa-form" id="tarefa-form" autocomplete="off">
           <input class="input" name="texto" id="tarefa-input" placeholder="O que merece sua atenção hoje?" maxlength="280" aria-label="Nova tarefa">
           <button class="btn btn-primary" type="submit">Adicionar</button>
+          <button class="btn btn-ghost" type="button" id="btn-fixas" title="Tarefas fixas: entram sozinhas nos dias escolhidos"></button>
         </form>
         <ul class="tarefa-list" id="tarefa-list"></ul>
       </section>
@@ -160,6 +162,18 @@
     </section>
 
     <!-- ============ QUADRO (kanban) ============ -->
+    <section id="view-historico" class="foco-view" hidden aria-labelledby="hist-title">
+      <div class="hist-head">
+        <h2 class="hist-title" id="hist-title">Seu mês</h2>
+        <div class="month-nav">
+          <button class="icon-btn" id="hist-prev" type="button" aria-label="Mês anterior"></button>
+          <strong id="hist-mes" aria-live="polite"></strong>
+          <button class="icon-btn" id="hist-next" type="button" aria-label="Próximo mês"></button>
+        </div>
+      </div>
+      <div id="hist-body"></div>
+    </section>
+
     <section id="view-quadro" class="foco-view" hidden>
       <div class="kb-bar">
         <div class="kb-bar-title">
@@ -223,6 +237,23 @@
   </dialog>
 
   <!-- Atalhos -->
+  <dialog class="dialog dialog-sm" id="fixas-dialog" aria-labelledby="fixas-title">
+    <div class="dialog-inner">
+      <header class="dialog-head">
+        <div><h2 class="dialog-title" id="fixas-title">Tarefas fixas</h2><p class="dialog-sub">Entram sozinhas no Meu dia, nos dias da semana escolhidos.</p></div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <ul class="fixas-list" id="fixas-list"></ul>
+        <form class="fixa-add" id="fixa-form" autocomplete="off">
+          <input class="input" name="texto" maxlength="280" placeholder="Ex.: Tomar o remédio, revisar a agenda" aria-label="Nova tarefa fixa" required>
+          <button class="btn btn-primary" type="submit">Adicionar</button>
+        </form>
+        <p class="field-hint">Apagar uma tarefa fixa do dia não a traz de volta naquele dia. Livros em leitura também entram sozinhos, todo dia: "Ler, no mínimo, 15 páginas".</p>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="dialog dialog-sm" id="atalhos-dialog" aria-labelledby="atalhos-title">
     <div class="dialog-inner">
       <header class="dialog-head">

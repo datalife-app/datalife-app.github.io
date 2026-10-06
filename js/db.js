@@ -218,13 +218,22 @@ export async function importBackup(uid, parsed) {
     return [m.key, data, cur];
   }).filter(([, data]) => Object.keys(data).length);
 
+  // Metas: as atuais ficam (só um banco sem metas recebe as do arquivo).
+  // Gastos fixos: somam por id (um backup antigo não apaga os cadastrados depois dele).
+  const metasCrua = LOCAL_MODE
+    ? lsRead('settings/metas')
+    : await fs.getDoc(ref(uid, 'settings', 'metas')).then(s => (s.exists() ? s.data() : null));
+  const recAtuais = await fetchRecorrentes(uid);
+  const idsRec = new Set(recAtuais.map(r => r.id));
+  const recorrentes = [...recAtuais, ...parsed.recorrentes.filter(r => !idsRec.has(r.id))].slice(0, 300);
+
   if (LOCAL_MODE) {
     for (const [key, data, cur] of writes) {
       const base = cur || { renda: 0, rendas: [], gastos: [] };
       lsWrite(`months/${key}`, { ...base, ...data, gastos: [...base.gastos, ...(data.gastos || [])] });
     }
-    lsWrite('settings/metas', parsed.metas);
-    lsWrite('settings/recorrentes', { itens: parsed.recorrentes });
+    if (!metasCrua) lsWrite('settings/metas', parsed.metas);
+    lsWrite('settings/recorrentes', { itens: recorrentes });
     return writes.length;
   }
 
@@ -232,8 +241,8 @@ export async function importBackup(uid, parsed) {
   const ops = [
     ...writes.map(([key, data]) => [ref(uid, 'months', key),
       data.gastos ? { ...data, gastos: fs.arrayUnion(...data.gastos) } : data, { merge: true }]),
-    [ref(uid, 'settings', 'metas'), parsed.metas],
-    [ref(uid, 'settings', 'recorrentes'), { itens: parsed.recorrentes }]
+    ...(metasCrua ? [] : [[ref(uid, 'settings', 'metas'), parsed.metas]]),
+    [ref(uid, 'settings', 'recorrentes'), { itens: recorrentes }]
   ];
   await commitInBatches(ops);
   return writes.length;

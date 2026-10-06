@@ -9,13 +9,15 @@
 
 import { requireAuth } from './auth.js';
 import { initPagina, persist, dadosProntos } from './pagina.js';
-import { fetchDia, fetchDias, saveCampo, addPomodoro, fetchConfig, saveConfig, diaVazio, LIMITES, POMODORO_PADRAO } from './foco-db.js';
+import { fetchDia, fetchDias, saveCampo, addPomodoro, fetchConfig, saveConfig, diaVazio, limparFixas, LIMITES, POMODORO_PADRAO } from './foco-db.js';
+import { fetchLendo } from './livros-db.js';
 import { initTarefas, render as renderTarefas, reset as resetTarefas, focusInput } from './foco-tarefas.js';
 import { initNotas, render as renderNotas, flush as flushNotas, focus as focusNotas, pendentes as notasPendentes } from './foco-notas.js';
-import { initPomodoro, render as renderPomodoro, alternar as alternarPomodoro } from './foco-pomodoro.js';
+import { initPomodoro, render as renderPomodoro, alternar as alternarPomodoro, seguirTarefa } from './foco-pomodoro.js';
 import { initSaude, render as renderSaude, planoAgua, formatMl } from './foco-saude.js';
 import { initQuadro, render as renderQuadro } from './foco-quadro.js';
-import { icon, showToast, dayKey, fromDayKey, shiftDay, monthKey, shiftMonth, MESES, escapeHtml } from './utils.js';
+import { initHistorico, render as renderHistorico } from './foco-historico.js';
+import { icon, showToast, dayKey, fromDayKey, shiftDay, monthKey, shiftMonth, MESES, escapeHtml, uid } from './utils.js';
 
 const $ = id => document.getElementById(id);
 const SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
@@ -37,6 +39,7 @@ const state = {
 /** Atualiza um campo do dia aberto na tela e no banco. */
 function saveDia(campo, valor, prev) {
   const day = state.day;
+  if (campo === 'tarefas') seguirFazendo(prev, valor);
   setCampo(day, campo, valor);
   persist(saveCampo(user.uid, day, campo, valor), () => setCampo(day, campo, prev));
 }
@@ -53,12 +56,156 @@ function setCampo(day, campo, valor) {
   }
   if (campo === 'tarefas' || campo === 'notas') renderQuadro();
   renderCal();
+  renderHistorico();
 }
 
 /** Tarefas de qualquer dia (o Quadro em "Semana" mexe em vários). */
 function salvarTarefas(day, next, prev) {
+  seguirFazendo(prev, next);
   setCampo(day, 'tarefas', next);
   persist(saveCampo(user.uid, day, 'tarefas', next), () => setCampo(day, 'tarefas', prev));
+}
+
+/** "Estou fazendo" liga o pomodoro; parar a tarefa (sem concluir) pausa. */
+function seguirFazendo(prev, next) {
+  const antes = new Set(prev.filter(t => t.fazendo).map(t => t.id));
+  const agora = next.filter(t => t.fazendo);
+  if (agora.some(t => !antes.has(t.id))) return seguirTarefa(true);
+  const parou = [...antes].some(id => { const t = next.find(x => x.id === id); return t && !t.fazendo && !t.feita; });
+  if (parou && !agora.length) seguirTarefa(false);
+}
+
+/* ---------- Tarefas automáticas (fixas e livro em leitura) ---------- */
+
+let lendoP = null;
+const lendo = () => (lendoP ||= fetchLendo(user.uid).catch(e => { console.error(e); lendoP = null; return []; }));
+const PAGINAS_DIA = 15;
+
+/**
+ * Cria no dia (hoje ou adiante) as tarefas fixas daquele dia da semana e, hoje,
+ * a leitura de cada livro em "Lendo". `geradas` guarda o que já entrou: apagar
+ * uma delas não a faz voltar.
+ */
+async function gerarAutomaticas(key) {
+  if (key < state.today) return;
+  const semana = fromDayKey(key).getDay();
+  const fixas = (state.config?.fixas || []).filter(f => f.dias.includes(semana))
+    .map(f => ({ origem: `fixa:${f.id}`, texto: f.texto }));
+  const livros = key === state.today
+    ? (await lendo()).map(l => ({ origem: `livro:${l.id}`, texto: `Ler, no mínimo, ${PAGINAS_DIA} páginas de "${l.titulo}"` }))
+    : [];
+  if (state.day !== key) return;
+  const dia = state.dia;
+  const ja = new Set([...dia.geradas, ...dia.tarefas.map(t => t.origem).filter(Boolean)]);
+  const novas = [...fixas, ...livros].filter(x => !ja.has(x.origem));
+  if (!novas.length) return;
+  const agora = Date.now();
+  const tarefas = [...dia.tarefas, ...novas.map((x, i) => ({ id: uid(), texto: x.texto.slice(0, LIMITES.texto), feita: false, criada: agora + i, origem: x.origem }))]
+    .slice(0, LIMITES.tarefas);
+  const geradas = [...dia.geradas, ...novas.map(x => x.origem)];
+  const prevT = dia.tarefas, prevG = dia.geradas;
+  setCampo(key, 'tarefas', tarefas);
+  setCampo(key, 'geradas', geradas);
+  persist(Promise.all([saveCampo(user.uid, key, 'tarefas', tarefas), saveCampo(user.uid, key, 'geradas', geradas)]), () => {
+    setCampo(key, 'tarefas', prevT);
+    setCampo(key, 'geradas', prevG);
+  });
+}
+
+/* ---------- Passar para o dia seguinte ---------- */
+
+/** Mover ou copiar uma tarefa de um dia para outro (padrão: do dia aberto para o seguinte). */
+async function passarTarefa(id, modo, de = state.day, para = shiftDay(de, 1)) {
+  const t = ((de === state.day ? state.dia : state.resumo.get(de))?.tarefas ?? []).find(x => x.id === id);
+  if (!t) return;
+  let alvo = state.resumo.get(para);
+  if (!alvo) {
+    try {
+      alvo = await fetchDia(user.uid, para);
+      state.resumo.set(para, alvo);
+    } catch (e) {
+      console.error(e);
+      return showToast('Não foi possível abrir o dia seguinte. Verifique a conexão.', 'error');
+    }
+  }
+  if (alvo.tarefas.length >= LIMITES.tarefas) return showToast(`O dia seguinte já tem ${LIMITES.tarefas} tarefas.`, 'error');
+  const copia = { id: uid(), texto: t.texto, feita: false, criada: Date.now() };
+  const prevAlvo = alvo.tarefas;
+  salvarTarefas(para, [...prevAlvo, copia], prevAlvo);
+  const prevDe = state.resumo.get(de)?.tarefas ?? state.dia.tarefas;
+  const pos = prevDe.findIndex(x => x.id === id);
+  if (modo === 'mover') salvarTarefas(de, prevDe.filter(x => x.id !== id), prevDe);
+  const quando = para === state.today ? 'hoje' : de === state.today ? 'amanhã' : 'o dia seguinte';
+  showToast(modo === 'mover' ? `"${t.texto}" foi para ${quando}.` : `"${t.texto}" copiada para ${quando}.`, 'success', 6000, {
+    label: 'Desfazer',
+    onClick: () => {
+      const a = (para === state.day ? state.dia : state.resumo.get(para))?.tarefas ?? [];
+      salvarTarefas(para, a.filter(x => x.id !== copia.id), a);
+      if (modo === 'mover') {
+        const d = (de === state.day ? state.dia : state.resumo.get(de))?.tarefas ?? [];
+        if (!d.some(x => x.id === t.id)) salvarTarefas(de, [...d.slice(0, pos), t, ...d.slice(pos)], d);
+      }
+    }
+  });
+}
+
+/* ---------- Tarefas fixas (diálogo) ---------- */
+
+const DIAS_CURTOS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const DIAS_NOMES = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
+function renderFixas() {
+  const fixas = state.config?.fixas || [];
+  $('fixas-list').innerHTML = fixas.length ? fixas.map(f => `
+    <li class="fixa" data-id="${escapeHtml(f.id)}">
+      <span class="fixa-texto">${escapeHtml(f.texto)}</span>
+      <div class="fixa-dias" role="group" aria-label="Dias de ${escapeHtml(f.texto)}">
+        ${DIAS_CURTOS.map((d, i) => `<button type="button" class="fixa-dia" data-dia="${i}" aria-pressed="${f.dias.includes(i)}" aria-label="${DIAS_NOMES[i]}">${d}</button>`).join('')}
+      </div>
+      <button class="icon-btn danger" type="button" data-remove aria-label="Apagar tarefa fixa">${icon('trash', 15)}</button>
+    </li>`).join('') : '<li class="fixas-vazio">Nenhuma ainda. Ex.: "Tomar o remédio" todos os dias, "Academia" de segunda a sexta.</li>';
+}
+
+function salvarFixas(fixas) {
+  const prev = state.config;
+  state.config = { ...state.config, fixas: limparFixas(fixas) };
+  renderFixas();
+  persist(saveConfig(user.uid, state.config), () => { state.config = prev; renderFixas(); })
+    .then(ok => ok && gerarAutomaticas(state.day));
+}
+
+function initFixas() {
+  $('btn-fixas').innerHTML = `${icon('repeat', 16)}<span class="sr-only">Tarefas fixas</span>`;
+  $('btn-fixas').setAttribute('aria-label', 'Tarefas fixas');
+  const dlg = $('fixas-dialog');
+  dlg.querySelector('[data-close]').innerHTML = icon('x', 18);
+  dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+  $('btn-fixas').addEventListener('click', () => { renderFixas(); dlg.showModal(); });
+  $('fixa-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const texto = e.target.texto.value.trim();
+    if (!texto) return;
+    if ((state.config?.fixas || []).length >= LIMITES.fixas) return showToast(`Até ${LIMITES.fixas} tarefas fixas.`, 'error');
+    salvarFixas([...(state.config?.fixas || []), { id: uid(), texto, dias: [0, 1, 2, 3, 4, 5, 6] }]);
+    e.target.reset();
+  });
+  $('fixas-list').addEventListener('click', e => {
+    const li = e.target.closest('[data-id]');
+    if (!li) return;
+    const fixas = state.config.fixas;
+    const f = fixas.find(x => x.id === li.dataset.id);
+    if (e.target.closest('[data-remove]')) {
+      salvarFixas(fixas.filter(x => x !== f));
+      showToast(`"${f.texto}" deixou de ser fixa.`, 'success', 6000, { label: 'Desfazer', onClick: () => salvarFixas([...state.config.fixas, f]) });
+    }
+    const b = e.target.closest('[data-dia]');
+    if (b) {
+      const d = Number(b.dataset.dia);
+      const dias = f.dias.includes(d) ? f.dias.filter(x => x !== d) : [...f.dias, d];
+      if (!dias.length) return showToast('Escolha pelo menos um dia.', 'error');
+      salvarFixas(fixas.map(x => (x === f ? { ...x, dias } : x)));
+    }
+  });
 }
 
 /* ---------- Dia ---------- */
@@ -98,6 +245,7 @@ async function loadDay(key, { animate = true } = {}) {
     if (!cached) renderDay(animate);
     else if (JSON.stringify(dia) !== JSON.stringify(cached)) renderDay(false, { keepNotes: notasPendentes() });
     renderCal();
+    gerarAutomaticas(key);
   } catch (e) {
     if (seq !== loadSeq) return;
     console.error(e);
@@ -142,21 +290,28 @@ let calSeq = 0;
 
 const mesesLidos = new Set(); // meses do calendário já lidos nesta visita
 
+/** Lê de uma vez os dias de um mês (grade do calendário) para o cache. */
+async function carregarMes(month) {
+  if (mesesLidos.has(month)) return;
+  const cells = calCells(month);
+  const dias = await fetchDias(user.uid, cells[0], cells[cells.length - 1]);
+  mesesLidos.add(month);
+  // Dias sem documento no intervalo lido estão vazios: abrir um deles não precisa esperar
+  for (const k of cells) if (k !== state.day && !state.resumo.has(k)) state.resumo.set(k, dias.get(k) || diaVazio());
+  for (const [k, d] of dias) if (k !== state.day) state.resumo.set(k, d);
+}
+
 async function setCalMonth(month) {
   state.calMonth = month;
   renderCal();
   if (mesesLidos.has(month)) return;
-  const cells = calCells(month);
   const seq = ++calSeq;
   try {
-    const dias = await fetchDias(user.uid, cells[0], cells[cells.length - 1]);
-    mesesLidos.add(month);
+    await carregarMes(month);
     if (seq !== calSeq) return;
-    // Dias sem documento no intervalo lido estão vazios: abrir um deles não precisa esperar
-    for (const k of cells) if (k !== state.day && !state.resumo.has(k)) state.resumo.set(k, dias.get(k) || diaVazio());
-    for (const [k, d] of dias) if (k !== state.day) state.resumo.set(k, d);
     renderCal();
     renderQuadro(); // a "Semana" do Quadro usa este mesmo cache
+    renderHistorico();
   } catch (e) {
     console.error(e); // indicadores são extras: sem eles o calendário segue funcionando
   }
@@ -219,7 +374,8 @@ function lerAjustes() {
   const peso = int(f.peso);
   return {
     pomodoro: { foco: int(f.foco), curta: int(f.curta), longa: int(f.longa), ciclos: int(f.ciclos), som: f.som.checked },
-    agua: f.peso.value && peso >= 25 && peso <= 250 ? { peso, exercicio: f.exercicio.checked, calor: f.calor.checked } : null
+    agua: f.peso.value && peso >= 25 && peso <= 250 ? { peso, exercicio: f.exercicio.checked, calor: f.calor.checked } : null,
+    fixas: state.config?.fixas || [] // editadas no diálogo próprio; aqui só passam adiante
   };
 }
 
@@ -306,6 +462,7 @@ function onKey(e) {
   };
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (tabAtual === 'quadro' && !['ArrowLeft', 'ArrowRight', 'h', '?'].includes(k)) return;
+  if (tabAtual === 'historico' && k !== '?') return;
   const fn = actions[k];
   if (!fn) return;
   e.preventDefault();
@@ -344,7 +501,18 @@ const isToday = () => state.day === state.today;
 initTarefas({
   tarefas: () => state.dia.tarefas,
   save: (next, prev) => saveDia('tarefas', next, prev),
+  passar: passarTarefa,
   isToday
+});
+initFixas();
+initHistorico({
+  today: () => state.today,
+  config: () => state.config,
+  // Dia do cache do calendário (ou o aberto); undefined = ainda não lido
+  dia: k => (k === state.day ? state.dia : state.resumo.get(k)),
+  carregar: carregarMes,
+  trazer: (dia, id) => passarTarefa(id, 'mover', dia, state.today),
+  abrirDia: dia => { location.hash = '#day'; loadDay(dia); }
 });
 initNotas({
   day: () => state.day,
@@ -366,12 +534,14 @@ initQuadro({
 
 /* ---------- Abas: Meu dia | Quadro (via hash, como no Orçamento) ---------- */
 let tabAtual = 'dia';
-const TAB_HASH = { '#day': 'dia', '#board': 'quadro' };
+const TAB_HASH = { '#day': 'dia', '#board': 'quadro', '#history': 'historico' };
 
 function showTab() {
   tabAtual = TAB_HASH[location.hash] || 'dia';
   $('view-dia').hidden = tabAtual !== 'dia';
   $('view-quadro').hidden = tabAtual !== 'quadro';
+  $('view-historico').hidden = tabAtual !== 'historico';
+  $('foco-dia-nav').style.visibility = tabAtual === 'historico' ? 'hidden' : ''; // o histórico navega por mês
   document.querySelectorAll('.tab').forEach(t => {
     const on = t.dataset.tab === tabAtual;
     t.classList.toggle('active', on);
@@ -379,6 +549,7 @@ function showTab() {
   });
   moveTabIndicator();
   renderQuadro();
+  renderHistorico();
 }
 
 function moveTabIndicator() {
@@ -419,7 +590,7 @@ try {
   state.config = await fetchConfig(user.uid);
 } catch (e) {
   console.error(e);
-  state.config = { pomodoro: POMODORO_PADRAO, agua: null };
+  state.config = { pomodoro: POMODORO_PADRAO, agua: null, fixas: [] };
 }
 
 initPomodoro({

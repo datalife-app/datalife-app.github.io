@@ -17,7 +17,7 @@ import { initPagina, persist, dadosProntos } from './pagina.js';
 import { fetchEntradas, fetchEntradasAno, fetchEntradasEntre, fetchPrimeiroDia, fetchEntrada, saveEntrada, fetchTags, saveTags, entradaVazia, temConteudo, HUMORES, TAGS_PADRAO, LIMITES } from './diario-db.js';
 import { sequencia, maiorSequencia, nesteDia, perguntaDoDia, PERGUNTAS, buscar, atividades, contarPalavras } from './diario-calc.js';
 import { fetchDia, fetchConfig as fetchFocoConfig } from './foco-db.js';
-import { exigirCofre } from './cofre-ui.js';
+import { exigirCofre, antesDeTrancar } from './cofre-ui.js';
 import { fetchMonth } from './db.js';
 import { planoAgua, formatMl, COPO_ML } from './foco-saude.js';
 import {
@@ -63,7 +63,9 @@ const gravar = debounce(async (day, entrada) => {
   else state.entradas.delete(day);
   state.primeiroAno = Math.min(state.primeiroAno, Number(day.slice(0, 4)));
   renderResumo();
-  const ok = await persist(saveEntrada(user.uid, day, entrada), () => {
+  const gravando = saveEntrada(user.uid, day, entrada);
+  state.gravando = gravando.catch(() => {});
+  const ok = await persist(gravando, () => {
     if (antes) state.entradas.set(day, antes);
     else state.entradas.delete(day);
     renderResumo();
@@ -538,6 +540,9 @@ window.addEventListener('resize', moveTabIndicator);
 document.fonts?.ready.then(moveTabIndicator);
 
 /* ---------- Init ---------- */
+
+// Trancar o cadeado com texto ainda por salvar: grava antes (com a chave ainda na memória)
+antesDeTrancar.add(async () => { gravar.flush(); await state.gravando; });
 
 initPagina();
 bind();

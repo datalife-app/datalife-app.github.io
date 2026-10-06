@@ -94,6 +94,14 @@ export async function fetchLivros(uid) {
   return entries.map(([id, raw]) => sanitizeLivro(id, raw)).filter(Boolean);
 }
 
+/** Só os livros em leitura (o Foco cria a tarefa de leitura do dia). Lê poucos documentos. */
+export async function fetchLendo(uid) {
+  const entries = LOCAL_MODE
+    ? lsList('livros').filter(([, raw]) => raw?.status === 'lendo')
+    : (await fs.getDocs(fs.query(col(uid, 'livros'), fs.where('status', '==', 'lendo')))).docs.map(d => [d.id, d.data()]);
+  return entries.map(([id, raw]) => sanitizeLivro(id, raw)).filter(l => l && l.status === 'lendo');
+}
+
 export async function saveLivro(uid, livro) {
   const clean = sanitizeLivro(livro.id, livro);
   if (!clean) throw new Error('Livro inválido');

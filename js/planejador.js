@@ -16,7 +16,7 @@ import {
 } from './planejador-db.js';
 import { enhanceSelect } from './selectpicker.js';
 import { enhanceDateInput } from './datepicker.js';
-import { icon, escapeHtml, showToast, uid, dayKey, fromDayKey, monthKey, shiftMonth, MESES } from './utils.js';
+import { letreiros, icon, escapeHtml, showToast, uid, dayKey, fromDayKey, monthKey, shiftMonth, MESES } from './utils.js';
 
 const $ = id => document.getElementById(id);
 const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -58,11 +58,12 @@ function renderCal() {
       <div class="cal-cell ${cls}" data-dia="${k}">
         <button type="button" class="cal-num num" data-novo-dia="${k}" aria-label="Nova data em ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()}">${d.getDate()}</button>
         <ul class="cal-evs">
-          ${evs.slice(0, 3).map(e => `<li><button type="button" class="cal-ev tipo-${e.tipo}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(e.titulo)}">${e.hora ? `<span class="num">${e.hora}</span>` : ''}${escapeHtml(e.titulo)}</button></li>`).join('')}
+          ${evs.slice(0, 3).map(e => `<li><button type="button" class="cal-ev tipo-${e.tipo}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(e.titulo)}">${e.hora ? `<span class="num">${e.hora}</span>` : ''}<span class="letreiro"><span>${escapeHtml(e.titulo)}</span></span></button></li>`).join('')}
           ${evs.length > 3 ? `<li class="cal-mais">+${evs.length - 3}</li>` : ''}
         </ul>
       </div>`;
   }).join('');
+  letreiros(document.querySelector('.cal-grid') || document);
 }
 
 /* ---------- Próximas (contagem regressiva) ---------- */
@@ -117,6 +118,12 @@ function render() {
 
 /* ---------- Dialog ---------- */
 
+/** "Dia inteiro": sem o campo de minutos, a hora ocupa a largura toda. */
+function diaInteiro() {
+  const f = $('ev-form');
+  f.querySelector('.hora-pick').classList.toggle('is-dia', !f.h.value);
+}
+
 function abrir(ev, dia) {
   state.editando = ev;
   const f = $('ev-form');
@@ -129,6 +136,7 @@ function abrir(ev, dia) {
   f.h.value = h ?? '';
   f.m.value = m ?? '00';
   f.m.disabled = !h;
+  diaInteiro();
   f.anual.checked = ev?.anual || false;
   f.nota.value = ev?.nota || '';
   state.tipo = ev?.tipo || 'compromisso';
@@ -159,11 +167,11 @@ function bind() {
   $('cal-next').innerHTML = icon('chevronRight', 16);
   const f = $('ev-form');
   f.h.innerHTML = '<option value="">Dia inteiro</option>' + Array.from({ length: 24 }, (_, i) => `<option value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}h</option>`).join('');
-  f.m.innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${String(i * 5).padStart(2, '0')}">${String(i * 5).padStart(2, '0')} min</option>`).join('');
+  f.m.innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${String(i * 5).padStart(2, '0')}">:${String(i * 5).padStart(2, '0')}</option>`).join('');
   enhanceSelect(f.h);
   enhanceSelect(f.m);
   enhanceDateInput(f.data);
-  f.h.addEventListener('change', () => { f.m.disabled = !f.h.value; });
+  f.h.addEventListener('change', () => { f.m.disabled = !f.h.value; diaInteiro(); });
 
   const dlg = $('ev-dialog');
   dlg.querySelector('.dialog-head [data-close]').innerHTML = icon('x', 18);
@@ -239,3 +247,6 @@ try {
 }
 render();
 dadosProntos(); // um documento por item: sem risco de sobrescrever
+
+// Letreiros dependem da largura das células
+window.addEventListener('resize', () => letreiros(document.querySelector('.cal-grid') || document));

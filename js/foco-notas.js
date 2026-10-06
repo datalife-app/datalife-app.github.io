@@ -103,7 +103,7 @@ export function focus() {
 
 function add() {
   if (pages.length >= LIMITES.notas) return;
-  const p = nova(`Nota ${pages.length + 1}`);
+  const p = nova('Nota');
   pages.push(p);
   activeId = p.id;
   renderTabs();

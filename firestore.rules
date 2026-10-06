@@ -79,7 +79,9 @@ service cloud.firestore {
     match /users/{userId}/settings/foco {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['pomodoro', 'agua'])
+        && request.resource.data.keys().hasOnly(['pomodoro', 'agua', 'fixas'])
+        && request.resource.data.get('fixas', []) is list
+        && request.resource.data.get('fixas', []).size() <= 30
         && request.resource.data.pomodoro is map
         && request.resource.data.pomodoro.keys().hasOnly(['foco', 'curta', 'longa', 'ciclos', 'som'])
         && isIntEntre(request.resource.data.pomodoro.foco, 1, 180)
@@ -97,7 +99,9 @@ service cloud.firestore {
       allow read, delete: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && dia.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
-        && request.resource.data.keys().hasOnly(['tarefas', 'notas', 'agua', 'refeicoes', 'exercicio', 'pomodoros'])
+        && request.resource.data.keys().hasOnly(['tarefas', 'notas', 'agua', 'refeicoes', 'exercicio', 'pomodoros', 'geradas'])
+        && request.resource.data.get('geradas', []) is list
+        && request.resource.data.get('geradas', []).size() <= 60
         && request.resource.data.get('tarefas', []) is list
         && request.resource.data.get('tarefas', []).size() <= 200
         && request.resource.data.get('notas', []) is list
@@ -291,14 +295,22 @@ service cloud.firestore {
 
     // ---------- Lista de compras ----------
 
-    match /users/{userId}/compras/lista {
+    // Configuração (frequentes + alimentação/mês) e uma lista por dia
+    match /users/{userId}/compras/{doc} {
       allow read, delete: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['itens', 'frequentes'])
-        && request.resource.data.itens is list
-        && request.resource.data.itens.size() <= 300
-        && request.resource.data.get('frequentes', []) is list
-        && request.resource.data.get('frequentes', []).size() <= 150;
+      allow create, update: if isOwner(userId) && (
+        (doc == 'lista'
+          && request.resource.data.keys().hasOnly(['itens', 'frequentes', 'alimentacao'])
+          && request.resource.data.get('itens', []) is list
+          && request.resource.data.get('itens', []).size() <= 300
+          && request.resource.data.get('frequentes', []) is list
+          && request.resource.data.get('frequentes', []).size() <= 150
+          && isCents(request.resource.data.get('alimentacao', 0)))
+        || (doc.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && request.resource.data.keys().hasOnly(['itens', 'gasto'])
+          && request.resource.data.itens is list
+          && request.resource.data.itens.size() <= 300
+          && isCents(request.resource.data.get('gasto', 0))));
     }
 
     // ---------- Compras conscientes ----------

@@ -141,7 +141,7 @@ export function initBackup(userId) {
       <li><strong>${parsed.objetivos.length}</strong> ${parsed.objetivos.length === 1 ? 'objetivo' : 'objetivos'}</li>
       <li><strong>${parsed.livros?.livros.length || 0}</strong> livros</li>
       <li><strong>${parsed.diario?.entradas.length || 0}</strong> dias no Diário</li>
-      ${EXTRAS.filter(x => x.n(parsed[x.chave] || [])).map(x => { const [n, ...r] = rotulo(x, x.n(parsed[x.chave])).split(' '); return `<li><strong>${n}</strong> ${r.join(' ')}</li>`; }).join('')}`;
+      ${EXTRAS.filter(x => parsed[x.chave] != null && x.n(parsed[x.chave])).map(x => { const [n, ...r] = rotulo(x, x.n(parsed[x.chave])).split(' '); return `<li><strong>${n}</strong> ${r.join(' ')}</li>`; }).join('')}`;
     dialog.showModal();
   });
 

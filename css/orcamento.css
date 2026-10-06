@@ -17,7 +17,7 @@
   place-items: center;
   min-height: 190px;
 }
-.gastos-chart .donut-svg { width: 176px; }
+.gastos-chart .donut-svg { width: 200px; }
 .empty-text {
   max-width: 180px;
   text-align: center;
@@ -37,8 +37,8 @@
 .donut-svg .slice:focus-visible { filter: brightness(1.3); }
 
 .donut-center, .donut-caption { pointer-events: none; }
-.donut-center { fill: var(--text); font-family: var(--font); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
-.donut-caption { fill: var(--text-muted); font-family: var(--font); font-size: 10.5px; }
+.donut-center { fill: var(--text); font-family: var(--font-display); font-variant-numeric: proportional-nums; font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+.donut-caption { fill: var(--text-muted); font-family: var(--font); font-size: 13px; }
 
 .legend {
   list-style: none;
@@ -46,7 +46,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
   margin-top: 20px;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 .legend li { min-width: 0; }
@@ -63,8 +63,8 @@
 .legend .is-focus { color: var(--text); }
 .legend .is-dim { opacity: 0.4; }
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
   background: var(--c);
@@ -275,7 +275,7 @@
 .metas-chart-card { position: sticky; top: 16px; }
 .metas-chart { display: grid; place-items: center; padding: 8px 0; }
 .metas-chart .donut-svg { width: 220px; }
-.metas-chart .donut-center { font-size: 22px; }
+.metas-chart .donut-center { font-size: 28px; }
 .metas-chart.over .donut-center { fill: var(--danger); }
 
 .metas-status {

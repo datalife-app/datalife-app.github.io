@@ -13,6 +13,7 @@ const $ = id => document.getElementById(id);
 let ctx = null;        // { tarefas(), save(next, prev), isToday() }
 let filtro = 'todas';
 let editingId = null;
+let menuId = null; // tarefa com o menu "passar para o dia seguinte" aberto
 let lastAddedId = null;
 let dragId = null;
 
@@ -56,11 +57,16 @@ export function render() {
       <li class="tarefa ${t.feita ? 'is-done' : ''} ${t.fazendo && !t.feita ? 'is-fazendo' : ''} ${t.id === lastAddedId ? 'is-new' : ''}" data-id="${id}" ${ordenavel ? 'draggable="true"' : ''}>
         ${ordenavel ? `<span class="tarefa-grip" aria-hidden="true">${icon('grip', 14)}</span>` : ''}
         <input type="checkbox" ${t.feita ? 'checked' : ''} data-toggle aria-label="${t.feita ? 'Desmarcar' : 'Concluir'}: ${escapeHtml(t.texto)}">
-        <button type="button" class="tarefa-text" data-edit-start title="Clique para editar">${escapeHtml(t.texto)}${t.feita && t.concluida ? `<span class="tarefa-quando">feita às ${hora(t.concluida)}</span>` : ''}${t.fazendo ? '<span class="tarefa-fazendo">fazendo</span>' : ''}</button>
+        <button type="button" class="tarefa-text" data-edit-start title="Clique para editar">${t.origem ? `<span class="tarefa-auto" title="${t.origem.startsWith('livro') ? 'Do livro em leitura' : 'Tarefa fixa'}">${icon(t.origem.startsWith('livro') ? 'book' : 'repeat', 13)}</span>` : ''}${escapeHtml(t.texto)}${t.feita && t.concluida ? `<span class="tarefa-quando">feita às ${hora(t.concluida)}</span>` : ''}${t.fazendo ? '<span class="tarefa-fazendo">fazendo</span>' : ''}</button>
         <div class="tarefa-actions">
           ${ordenavel ? `
           <button class="icon-btn tarefa-move" type="button" data-move="-1" aria-label="Mover para cima" ${i === 0 ? 'disabled' : ''}>${icon('chevronUp', 15)}</button>
           <button class="icon-btn tarefa-move" type="button" data-move="1" aria-label="Mover para baixo" ${i === list.length - 1 ? 'disabled' : ''}>${icon('chevronDown', 15)}</button>` : ''}
+          ${t.feita ? '' : `<span class="tarefa-passar-wrap"><button class="icon-btn" type="button" data-passar aria-haspopup="menu" aria-expanded="${menuId === t.id}" title="Passar para o dia seguinte" aria-label="Passar para o dia seguinte: ${escapeHtml(t.texto)}">${icon('arrowRight', 15)}</button>${menuId === t.id ? `
+            <span class="tarefa-menu" role="menu">
+              <button type="button" role="menuitem" data-passar-modo="mover">${icon('arrowRight', 14)} Mover para ${ctx.isToday() ? 'amanhã' : 'o dia seguinte'}</button>
+              <button type="button" role="menuitem" data-passar-modo="copiar">${icon('copy', 14)} Copiar para ${ctx.isToday() ? 'amanhã' : 'o dia seguinte'}</button>
+            </span>` : ''}</span>`}
           ${t.feita ? '' : `<button class="icon-btn tarefa-fazer ${t.fazendo ? 'is-on' : ''}" type="button" data-fazendo aria-pressed="${!!t.fazendo}"
             title="${t.fazendo ? 'Parar (volta para A fazer)' : 'Estou fazendo'}" aria-label="${t.fazendo ? 'Parar de fazer' : 'Estou fazendo'}: ${escapeHtml(t.texto)}">${icon(t.fazendo ? 'pause' : 'play', 15)}</button>`}
           <button class="icon-btn danger" type="button" data-remove aria-label="Excluir tarefa">${icon('trash', 15)}</button>
@@ -168,6 +174,7 @@ function setFiltro(f) {
 /** Ao trocar de dia: sai da edição. */
 export function reset() {
   editingId = null;
+  menuId = null;
 }
 
 export function focusInput() {
@@ -204,6 +211,15 @@ export function initTarefas(options) {
     if (e.target.closest('[data-edit-start]')) {
       editingId = id;
       render();
+    } else if (e.target.closest('[data-passar-modo]')) {
+      const modo = e.target.closest('[data-passar-modo]').dataset.passarModo;
+      menuId = null;
+      render();
+      ctx.passar(id, modo);
+    } else if (e.target.closest('[data-passar]')) {
+      menuId = menuId === id ? null : id;
+      render();
+      if (menuId) list.querySelector('.tarefa-menu button')?.focus();
     } else if (e.target.closest('[data-fazendo]')) {
       fazendo(id);
     } else if (e.target.closest('[data-remove]')) {
@@ -224,7 +240,12 @@ export function initTarefas(options) {
     else remove(id);
   });
 
+  // Fecha o menu ao clicar fora ou com Esc
+  document.addEventListener('pointerdown', e => {
+    if (menuId && !e.target.closest('.tarefa-passar-wrap')) { menuId = null; render(); }
+  });
   list.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && menuId) { e.stopPropagation(); menuId = null; render(); return; }
     if (e.key === 'Escape' && editingId) {
       e.stopPropagation();
       editingId = null;

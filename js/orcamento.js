@@ -275,6 +275,7 @@ function renderCatPanel(porCat) {
   const pct = devo > 0 ? gasto / devo * 100 : (gasto > 0 ? 100 : 0);
 
   $('cat-title').textContent = cat.nome;
+  $('gasto-form').elements.desc.placeholder = `Ex.: ${cat.exemplo}`;
   const restam = devo - gasto;
   $('cat-stats').innerHTML = `
     <div><span>Gasto</span><strong class="num">${formatBRL(gasto)}</strong></div>

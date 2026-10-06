@@ -346,7 +346,9 @@ a { color: inherit; text-decoration: none; }
 }
 .dialog[open] {
   opacity: 1;
-  transform: scale(1);
+  /* Em repouso, sem transform: senão listas suspensas e calendários abertos
+     dentro do diálogo ficam presos (e cortados) nele e criam uma rolagem falsa */
+  transform: none;
   transition-duration: 220ms;
 }
 @starting-style {
@@ -365,6 +367,24 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   max-height: inherit;
 }
+/* Uma única área rola, entre o cabeçalho e o rodapé (nada de barra dupla) */
+.dialog { overflow: hidden; }
+.dialog[open] { display: flex; flex-direction: column; }
+.dialog[open] > .dialog-inner { flex: 1 1 auto; min-height: 0; }
+.dialog-inner > :not(.dialog-head):not(.dialog-foot) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* ---------- Barras de rolagem: finas, na cor do tema, sem setas ---------- */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--p-300) 55%, transparent) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--p-300) 55%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--p-300); }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .dialog-head {
   display: flex;
   justify-content: space-between;
@@ -789,3 +809,25 @@ input[type="checkbox"]:focus-visible { outline: 1.5px solid var(--accent); outli
 
 /* Até os dados chegarem, a página não aceita interação (pagina.js: dadosProntos) */
 main[inert] { cursor: progress; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Diálogos com barra de filtros fixa acima da lista: só a lista rola */
+.dialog-inner > :is(.search-filters, .copy-toolbar) { flex: none; overflow: visible; }
+
+/* ---------- Letreiro (utils.js: letreiros) ---------- */
+.letreiro { display: block; min-width: 0; overflow: hidden; white-space: nowrap; }
+.letreiro > span { display: inline-block; white-space: nowrap; }
+.letreiro:not(.is-andando) > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.letreiro.is-andando {
+  /* Bordas esfumadas: o texto entra e sai sem corte seco */
+  mask-image: linear-gradient(90deg, transparent 0, #000 6px, #000 calc(100% - 10px), transparent);
+}
+.letreiro.is-andando > span { animation: letreiro var(--letreiro-t, 6s) ease-in-out infinite; padding-right: 8px; }
+@keyframes letreiro {
+  0%, 18% { transform: translateX(0); }
+  62%, 80% { transform: translateX(var(--letreiro-x, 0)); }
+  100% { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .letreiro.is-andando > span { animation: none; }
+  .letreiro.is-andando { mask-image: none; }
+}

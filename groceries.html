@@ -46,9 +46,16 @@
         <p>Por corredor, na ordem do mercado. Toque no item quando ele for para o carrinho.</p>
       </div>
       <div class="page-head-actions">
-        <button class="btn btn-ghost" type="button" id="btn-limpar" disabled></button>
+        <div class="month-nav day-nav">
+          <button class="icon-btn" id="dia-prev" type="button" aria-label="Dia anterior"></button>
+          <div class="day-label" aria-live="polite"><strong id="dia-label"></strong><span id="dia-sub"></span></div>
+          <button class="icon-btn" id="dia-next" type="button" aria-label="Próximo dia"></button>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button" id="dia-hoje" hidden>Hoje</button>
       </div>
     </div>
+
+    <section class="orc-semana" id="orc-semana" aria-label="Orçamento do mercado"></section>
 
     <form class="add-bar" id="add-form" autocomplete="off">
       <input class="input" name="item" id="add-item" maxlength="80" placeholder='Adicionar item (ex.: "2 kg arroz")' aria-label="Adicionar item">
@@ -61,6 +68,7 @@
 
     <div class="lista" id="lista"></div>
     <div class="totais" id="totais" hidden></div>
+    <div class="concluir-bar"><button class="btn btn-primary" type="button" id="btn-limpar" disabled></button></div>
   </main>
 
   <dialog class="dialog dialog-sm" id="item-dialog" aria-labelledby="item-title">

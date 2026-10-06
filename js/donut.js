@@ -118,6 +118,14 @@ export function renderDonut(el, slices, { center = '', caption = '', total, acti
 }
 
 /** Aplica o destaque in-place (classes + texto do centro), para as transições CSS rodarem. */
+/** Valor longo (ex.: R$ 12.345,67) encolhe para caber no furo do anel, sem vazar. */
+const FURO = (R - STROKE / 2) * 2 - 18;
+function caber(t) {
+  t.style.fontSize = '';
+  const w = t.getComputedTextLength?.() || 0;
+  if (w > FURO) t.style.fontSize = `${parseFloat(getComputedStyle(t).fontSize) * (FURO / w)}px`;
+}
+
 function paintActive(el, act, center, caption, animateText) {
   const svg = el.querySelector('svg');
   svg.classList.toggle('has-active', !!act);
@@ -131,8 +139,9 @@ function paintActive(el, act, center, caption, animateText) {
   const [centerEl, capEl] = svg.querySelectorAll('text');
   const changed = centerEl.textContent !== c || capEl.textContent !== cap;
   centerEl.textContent = c;
-  centerEl.setAttribute('y', cap ? SIZE * 0.48 : SIZE / 2);
+  centerEl.setAttribute('y', cap ? SIZE * 0.47 : SIZE / 2);
   capEl.textContent = cap;
+  caber(centerEl);
   // Troca de destaque: crossfade com blur leve mascara a troca do texto (Emil)
   if (changed && animateText && 'animate' in centerEl) {
     const frames = [{ opacity: 0, filter: 'blur(2px)' }, { opacity: 1, filter: 'blur(0)' }];

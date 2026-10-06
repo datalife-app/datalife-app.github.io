@@ -11,9 +11,49 @@ import {
 import { fetchEntradas, regravarDiario } from './diario-db.js';
 import { fetchVicios, regravarVicios } from './vicios-db.js';
 import { icon, showToast } from './utils.js';
+import { enhanceSelect } from './selectpicker.js';
 
 const $ = id => document.getElementById(id);
 const MIN = 10;
+
+/**
+ * Quem tem gravação pendente (o texto do Diário salva 0,8 s depois da última
+ * tecla) se registra aqui: antes de esquecer a chave, o cadeado espera.
+ */
+export const antesDeTrancar = new Set();
+async function trancarComSeguranca() {
+  try { await Promise.all([...antesDeTrancar].map(f => f())); } catch (e) { console.error(e); }
+  await trancar();
+}
+
+/* ---------- Trancar sozinho (por aparelho) ---------- */
+const AUTO_KEY = 'datalife:cofre-auto';
+const AUTO_OPCOES = [0, 5, 10, 15, 30, 60]; // minutos sem uso; 0 = nunca
+const lerAuto = () => { try { const n = Number(localStorage.getItem(AUTO_KEY)); return AUTO_OPCOES.includes(n) ? n : 0; } catch { return 0; } };
+let ultimoUso = Date.now(), vigia = 0;
+
+/** Sem uso por N minutos (contando com a aba em segundo plano): tranca e volta à tela de senha. */
+function vigiarInatividade() {
+  clearInterval(vigia);
+  const min = lerAuto();
+  if (!min || situacao() !== 'aberto') return;
+  ultimoUso = Date.now();
+  vigia = setInterval(async () => {
+    if (situacao() !== 'aberto') return clearInterval(vigia); // desligado ou já trancado
+    if (Date.now() - ultimoUso < min * 60_000) return;
+    clearInterval(vigia);
+    await trancarComSeguranca();
+    location.reload();
+  }, 15_000);
+}
+for (const ev of ['pointerdown', 'keydown', 'scroll', 'touchstart']) {
+  window.addEventListener(ev, () => { ultimoUso = Date.now(); }, { passive: true, capture: true });
+}
+// Voltou para a aba depois do prazo: tranca na hora
+document.addEventListener('visibilitychange', () => {
+  const min = lerAuto();
+  if (!document.hidden && min && situacao() === 'aberto' && Date.now() - ultimoUso >= min * 60_000) trancarComSeguranca().then(() => location.reload());
+});
 let user = null;
 
 function iconeBotao() {
@@ -35,7 +75,8 @@ export async function exigirCofre(u) {
   }
   iconeBotao();
   bindDialog();
-  if (s !== 'trancado') return;
+  $('cofre-tela').querySelector('.cofre-voltar').insertAdjacentHTML('afterbegin', icon('chevronLeft', 15));
+  if (s !== 'trancado') return vigiarInatividade();
   $('cofre-tela').hidden = false;
   const abas = document.querySelector('.topbar .tabs');
   if (abas) abas.style.visibility = 'hidden';
@@ -54,6 +95,7 @@ export async function exigirCofre(u) {
         $('cofre-tela').hidden = true;
         if (abas) abas.style.visibility = '';
         iconeBotao();
+        vigiarInatividade();
         resolve();
       } catch (err) {
         $('cofre-erro').textContent = err.message === 'senha' ? 'Senha incorreta.' : 'Não foi possível abrir. Tente de novo.';
@@ -97,8 +139,15 @@ function render() {
       </form>`;
     return;
   }
+  const auto = lerAuto();
   body.innerHTML = `
     <button class="btn btn-ghost cofre-acao" type="button" data-acao="trancar">${icon('lock', 16)} Trancar agora</button>
+    <label class="field cofre-auto"><span class="field-label">Trancar sozinho depois de</span>
+      <select class="input" id="cofre-auto">
+        ${AUTO_OPCOES.map(m => `<option value="${m}" ${m === auto ? 'selected' : ''}>${m ? `${m} minutos sem uso` : 'Nunca (só quando eu trancar)'}</option>`).join('')}
+      </select>
+      <span class="field-hint">Vale neste aparelho. Com a aba em segundo plano, o tempo continua contando.</span>
+    </label>
     <details class="cofre-sec">
       <summary>Trocar a senha</summary>
       <form id="cofre-trocar" autocomplete="off" class="form-body cofre-form">
@@ -147,15 +196,23 @@ function bindDialog() {
     if (situacao() === 'trancado') return $('cofre-abrir').senha.focus();
     render();
     dlg.showModal();
+    const sel = $('cofre-auto');
+    if (sel) enhanceSelect(sel);
   });
 
   $('cofre-body').addEventListener('click', async e => {
     if (e.target.closest('[data-acao="trancar"]')) {
-      await trancar();
+      await trancarComSeguranca();
       location.reload();
     }
   });
   $('cofre-body').addEventListener('input', e => e.target.setCustomValidity?.(''));
+  $('cofre-body').addEventListener('change', e => {
+    if (e.target.id !== 'cofre-auto') return;
+    try { localStorage.setItem(AUTO_KEY, e.target.value); } catch { /* ok */ }
+    vigiarInatividade();
+    showToast(Number(e.target.value) ? `O Diário tranca sozinho depois de ${e.target.value} minutos sem uso.` : 'Trancar sozinho: desligado.');
+  });
 
   $('cofre-body').addEventListener('submit', async e => {
     e.preventDefault();
@@ -194,6 +251,7 @@ function bindDialog() {
       }
       $('cofre-dialog').close();
       iconeBotao();
+      vigiarInatividade(); // liga/desliga o trancar sozinho conforme o novo estado
     } catch (err) {
       console.error(err);
       if (err.message === 'senha') {
