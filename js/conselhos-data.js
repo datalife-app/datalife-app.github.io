@@ -7,6 +7,18 @@
    Não é recomendação de investimento: são princípios gerais.
    ============================================ */
 
+/* Regras que mudam com a lei: num lugar só, com a data em que foram conferidas.
+   Ao revisar, atualize os valores e REGRAS.conferidas. */
+export const REGRAS = {
+  conferidas: 'outubro de 2026',
+  fgc: 'R$ 250 mil',
+  fgcTeto: 'R$ 1 milhão a cada 4 anos',
+  ir: ['22,5% até 180 dias', '20% até 360', '17,5% até 720', '15% acima disso'],
+  custodia: '0,20% ao ano',
+  custodiaIsencao: 'no Tesouro Selic até R$ 10 mil'
+};
+const notaRegras = `<p class="nota-regras">Regras de imposto e garantia conferidas em ${REGRAS.conferidas}. Leis mudam: confirme a regra vigente antes de aplicar.</p>`;
+
 export const TOPICOS = [
   {
     id: 'organizar',
@@ -63,7 +75,7 @@ export const TOPICOS = [
       { titulo: 'Onde guardar', html: `<ul>
           <li><strong>Na poupança de um banco com agência física em todo o país</strong>, como Itaú, Bradesco, Banco do Brasil e Caixa. Em uma emergência, ter atendimento presencial perto de você faz diferença; para a reserva, prefira esses bancos aos 100% digitais.</li>
           <li><strong>Resgate na hora</strong>: o dinheiro da poupança sai no mesmo instante, sem carência, sem imposto de renda e sem taxa.</li>
-          <li><strong>Garantia do FGC</strong>: a poupança tem a proteção do Fundo Garantidor de Créditos até <strong>R$ 250 mil por CPF por instituição</strong>. Acima disso, divida entre bancos.</li>
+          <li><strong>Garantia do FGC</strong>: a poupança tem a proteção do Fundo Garantidor de Créditos até <strong>${REGRAS.fgc} por CPF por instituição</strong>. Acima disso, divida entre bancos.</li>
           <li><strong>A reserva não é para render</strong>: é para estar lá quando precisar. O dinheiro das <em>metas</em> (viagem, presentes) é que pode ir para algo com resgate imediato que renda mais que a poupança, como CDB com liquidez diária ou Tesouro Selic.</li>
           <li><strong>Fora da reserva</strong>: ações, fundos imobiliários, cripto e qualquer coisa com carência ou que oscile de preço.</li>
         </ul>` },
@@ -180,6 +192,102 @@ export const TOPICOS = [
     ]
   },
   {
+    id: 'investir',
+    titulo: 'Renda fixa, renda variável e diversificação',
+    icone: 'trending',
+    resumo: 'Na renda fixa você empresta o dinheiro e as regras do rendimento são combinadas antes; na renda variável você vira sócio e o valor oscila. A lição de Ray Dalio: o risco não cai escolhendo o "melhor" investimento, e sim combinando vários que não sobem e caem juntos.',
+    secoes: [
+      { titulo: 'Renda fixa: você empresta', html: `<p>Você empresta dinheiro ao governo, a um banco ou a uma empresa, e a regra do rendimento é combinada na hora da aplicação. Há três tipos:</p>
+        <ul>
+          <li><strong>Pós-fixado</strong>: acompanha a Selic ou o CDI. Ex.: Tesouro Selic e CDB com liquidez diária, que quase não oscilam e são o lugar do dinheiro das metas de curto prazo. LCI e LCA também costumam ser pós-fixadas, mas têm carência: só servem para metas com data além dela.</li>
+          <li><strong>Prefixado</strong>: a taxa é fixada no dia da compra (ex.: 12% ao ano). Ganha quando os juros do país caem e perde quando eles sobem.</li>
+          <li><strong>Atrelado à inflação (IPCA+)</strong>: paga a inflação mais uma taxa fixa. Ex.: Tesouro IPCA+. Protege o poder de compra no longo prazo.</li>
+        </ul>
+        <p>Os riscos da renda fixa são três:</p>
+        <ul>
+          <li><strong>Crédito</strong>: quem pegou o dinheiro não pagar. O Tesouro Direto tem garantia do governo federal; CDB, LCI e LCA têm o <strong>FGC</strong>, que cobre até <strong>${REGRAS.fgc} por CPF por instituição</strong>, com teto de ${REGRAS.fgcTeto}.</li>
+          <li><strong>Marcação a mercado</strong>: prefixados e IPCA+ longos mudam de preço todo dia. Quem leva até o vencimento recebe o combinado; quem vende antes pode ganhar ou perder.</li>
+          <li><strong>Liquidez</strong>: alguns títulos só podem ser resgatados no vencimento. Confira antes de aplicar.</li>
+        </ul>
+        <p>Na próxima seção, cada título da renda fixa explicado, com garantia e imposto.</p>` },
+      { titulo: 'Os títulos, um a um', html: `<p>Os nomes assustam, mas cada um responde a três perguntas: <strong>para quem você empresta</strong>, <strong>quem garante se der errado</strong> e <strong>se tem imposto</strong>.</p>
+        <div class="table-wrap"><table class="cmp titulos">
+          <thead><tr><th>Título</th><th>Você empresta para</th><th>Garantia</th><th>IR (pessoa física)</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Título"><strong>Tesouro Direto</strong></td><td data-label="Você empresta para">Governo federal</td><td data-label="Garantia">Tesouro Nacional</td><td data-label="IR">Tabela regressiva</td></tr>
+            <tr><td data-label="Título"><strong>CDB</strong></td><td data-label="Você empresta para">Banco</td><td data-label="Garantia">FGC, até ${REGRAS.fgc}</td><td data-label="IR">Tabela regressiva</td></tr>
+            <tr><td data-label="Título"><strong>LCI e LCA</strong></td><td data-label="Você empresta para">Banco (para imóveis e agro)</td><td data-label="Garantia">FGC, até ${REGRAS.fgc}</td><td data-label="IR">Isento</td></tr>
+            <tr><td data-label="Título"><strong>CRI e CRA</strong></td><td data-label="Você empresta para">Empresas de imóveis e agro, via securitizadora</td><td data-label="Garantia"><strong>Sem FGC</strong></td><td data-label="IR">Isento</td></tr>
+            <tr><td data-label="Título"><strong>Debêntures</strong></td><td data-label="Você empresta para">Empresas (S.A.)</td><td data-label="Garantia"><strong>Sem FGC</strong></td><td data-label="IR">Regressiva; isenta se incentivada</td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li><strong>Tesouro Direto</strong>: títulos do governo comprados pelo app do banco ou da corretora, a partir de cerca de R$ 30. É o investimento mais seguro do país em reais. Há o <em>Tesouro Selic</em> (pós-fixado, para metas de curto prazo; a reserva fica na poupança, veja o guia <a href="#reserva">Reserva de emergência</a>), o <em>Prefixado</em>, o <em>IPCA+</em> (longo prazo), e o <em>Renda+</em> e o <em>Educa+</em>, que pagam uma renda mensal na aposentadoria ou na faculdade dos filhos. O Tesouro recompra todo dia, mas antes do vencimento vale o preço de mercado (exceto no Selic, que quase não oscila). Cobra taxa de custódia da B3 de ${REGRAS.custodia}, com isenções, como ${REGRAS.custodiaIsencao}.</li>
+          <li><strong>CDB (Certificado de Depósito Bancário)</strong>: você empresta para o banco. Pode ter liquidez diária ou só no vencimento. Bancos menores pagam mais (110%, 120% do CDI) porque o risco é maior, e o FGC cobre até o limite. Com a Selic alta, um CDB de 100% do CDI costuma render mais que a poupança mesmo depois do imposto. Com juros baixos, ou resgatando antes de 6 meses (IR de 22,5%), a poupança pode ganhar: compare a taxa líquida.</li>
+          <li><strong>LCI e LCA (Letras de Crédito Imobiliário e do Agronegócio)</strong>: também emitidas por bancos, mas o dinheiro financia imóveis e o agronegócio. Por isso são <strong>isentas de IR</strong> para pessoa física e têm FGC. Em troca, têm <strong>carência</strong>: um prazo mínimo antes de poder resgatar. Para comparar com um CDB, divida a taxa da LCI pelo que sobra depois do IR: 90% do CDI isento equivalem a cerca de 106% do CDI num CDB tributado em 15%.</li>
+          <li><strong>CRI e CRA (Certificados de Recebíveis Imobiliários e do Agronegócio)</strong>: uma securitizadora junta dívidas de empresas (aluguéis de shoppings, vendas de uma usina) e vende pedaços para você. São isentos de IR, mas <strong>não têm FGC</strong>: se a empresa devedora quebrar, você pode perder. Costumam ter prazos longos e pouca liquidez. Olhe quem é o devedor e a nota de crédito (rating).</li>
+          <li><strong>Debêntures</strong>: dívida emitida diretamente por empresas para financiar seus projetos. Pagam mais que títulos de banco porque <strong>não têm FGC</strong>. As <em>incentivadas</em> financiam infraestrutura (energia, estradas, saneamento) e são <strong>isentas de IR</strong>. Vender antes do vencimento pode ser difícil e com desconto.</li>
+        </ul>
+        <p><strong>A regra prática:</strong> quanto maior a taxa, maior o risco. Sem FGC (CRI, CRA, debêntures), cada emissor deve ser uma parte pequena da carteira, e a soma desses títulos não deve virar a maior fatia da renda fixa.</p>
+        <p>A tabela do IR regressivo: <strong>${REGRAS.ir.join('</strong>, <strong>')}</strong>, sempre só sobre o rendimento. Resgates com menos de 30 dias também pagam IOF.</p>
+        ${notaRegras}` },
+      { titulo: 'Renda variável: você vira sócio', html: `<p>Na renda variável não há rendimento combinado. Você compra uma parte de algo e ganha (ou perde) com o resultado:</p>
+        <ul>
+          <li><strong>Ações</strong>: pedaços de empresas. Ganham com o lucro (dividendos) e com a valorização.</li>
+          <li><strong>Fundos imobiliários (FIIs)</strong>: pedaços de imóveis e dívidas imobiliárias, que distribuem aluguéis e juros todo mês.</li>
+          <li><strong>ETFs</strong>: fundos negociados na bolsa que copiam um índice inteiro (o Ibovespa, a bolsa americana). Diversificação pronta e com custo baixo.</li>
+          <li><strong>Ouro, dólar e outras moedas</strong>: não pagam juros, mas costumam subir quando o resto vai mal.</li>
+        </ul>
+        <p>No longo prazo, a renda variável tende a render mais, justamente porque oscila mais. As regras de ouro: <strong>só entra dinheiro que você não vai precisar por 5 anos ou mais</strong>, nunca o da reserva de emergência, e nunca com dinheiro emprestado.</p>` },
+      { titulo: 'Cada dinheiro no seu lugar', html: `<ul>
+          <li><strong>Reserva de emergência</strong>: liquidez no mesmo dia (veja o guia <a href="#reserva">Reserva de emergência</a>).</li>
+          <li><strong>Metas com data (até uns 3 anos)</strong>: pós-fixado com liquidez diária ou com vencimento perto da data da meta. Nada que oscile.</li>
+          <li><strong>Longo prazo (liberdade financeira)</strong>: uma carteira <strong>diversificada</strong> entre renda fixa e renda variável, que é o resto deste guia.</li>
+        </ul>` },
+      { titulo: 'Correlação: o que anda junto', html: `<p><strong>Correlação</strong> mede o quanto dois investimentos se movem juntos, numa escala de −1 a +1:</p>
+        <ul>
+          <li><strong>+1</strong>: andam sempre juntos. Duas ações de bancos parecidos, por exemplo. Ter as duas quase não diversifica.</li>
+          <li><strong>0</strong>: não têm relação. Um subir não diz nada sobre o outro.</li>
+          <li><strong>−1</strong>: andam em sentidos opostos. Quando um cai, o outro sobe.</li>
+        </ul>
+        <p>No Brasil, o <strong>dólar</strong> costuma subir quando a bolsa brasileira cai em crises, e por isso investimentos no exterior protegem quem tem quase tudo em reais. Mas correlação <strong>não é fixa</strong>: em 2022, com a inflação alta no mundo, ações e títulos de longo prazo caíram juntos. Diversificar é se preparar para mais de um cenário, não apostar em um.</p>` },
+      { titulo: 'O "Santo Graal" de Ray Dalio', html: `<p>Ray Dalio fundou a Bridgewater, uma das maiores gestoras do mundo. No livro <em>Princípios</em>, ele chama de <strong>"Santo Graal dos investimentos"</strong> a ideia de ter de <strong>15 a 20 boas fontes de retorno que não sejam correlacionadas</strong> entre si. Com isso, o risco da carteira cai cerca de <strong>80%</strong>, sem reduzir o retorno esperado.</p>
+        <p>O detalhe que quase todo mundo erra: <strong>ter muitos investimentos não basta</strong>. Vinte ações brasileiras que caem juntas na crise são quase um investimento só. O que importa é quão pouco eles andam juntos. Mexa abaixo:</p>`, ferramenta: 'diversificacao' },
+      { titulo: 'As quatro estações (All Weather)', html: `<p>Para Dalio, os preços dos ativos mudam com duas coisas que ninguém consegue prever com segurança: o <strong>crescimento da economia</strong> e a <strong>inflação</strong>. Cada uma pode vir <strong>acima ou abaixo do esperado</strong>, o que dá quatro "estações", e cada classe de investimento vai bem em algumas delas. Esta é a grade que a Bridgewater usa, com cada fator separado:</p>
+        <div class="table-wrap"><table class="estacoes">
+          <thead><tr><th></th><th>Acima do esperado</th><th>Abaixo do esperado</th></tr></thead>
+          <tbody>
+            <tr><th>Crescimento</th><td>Ações, títulos de empresas, commodities</td><td>Títulos prefixados de governo, títulos atrelados à inflação</td></tr>
+            <tr><th>Inflação</th><td>Títulos atrelados à inflação (IPCA+), commodities</td><td>Ações, títulos prefixados de governo</td></tr>
+          </tbody>
+        </table></div>
+        <p>O <strong>ouro</strong> não aparece na grade original, mas costuma entrar junto das commodities como proteção contra inflação e crises, e faz parte da versão simplificada da carteira, mais abaixo.</p>
+        <p>A carteira <strong>All Weather</strong> ("para qualquer clima") coloca um pedaço do risco em cada estação. Assim, não importa qual venha, sempre há algo indo bem para segurar o que vai mal.</p>
+        <p>A ideia central é a <strong>paridade de risco</strong>: equilibrar o <em>risco</em>, não o dinheiro. Numa carteira clássica de 60% ações e 40% títulos, as ações oscilam tanto que respondem por cerca de 90% do risco: na prática, é uma carteira de ações. Por isso a All Weather tem mais renda fixa longa, que oscila menos por real investido.</p>
+        <p>Uma versão simplificada, divulgada por Dalio numa entrevista ao livro <em>Dinheiro: domine esse jogo</em>, de Tony Robbins, é: <strong>30% ações, 40% títulos de longo prazo, 15% títulos intermediários, 7,5% ouro e 7,5% commodities</strong>. Ela foi pensada para o investidor americano. Serve para entender a lógica, não como receita para copiar.</p>` },
+      { titulo: 'Na prática, no Brasil', html: `<ul>
+          <li><strong>Primeiro a reserva</strong>, depois o resto. Sem ela, qualquer queda vira venda no pior momento.</li>
+          <li><strong>Cubra as quatro estações</strong> com classes diferentes: pós-fixado, IPCA+ e prefixado longo na renda fixa; ações do Brasil e do exterior; ouro ou dólar.</li>
+          <li><strong>Diversifique também de país e de moeda.</strong> Sua renda, seu imóvel e seu emprego já estão no Brasil.</li>
+          <li><strong>Rebalanceie uma vez por ano</strong>: venda um pouco do que subiu muito e compre do que ficou para trás, voltando às proporções que você escolheu. É vender caro e comprar barato de forma automática.</li>
+          <li><strong>Não persiga o campeão do ano passado.</strong> O que mais subiu costuma ser justamente o que menos protege na próxima estação.</li>
+          <li><strong>Custos baixos</strong>: taxa de administração de 2% ao ano come uma fatia enorme do resultado em 30 anos. Prefira títulos diretos e ETFs baratos.</li>
+          <li><strong>Respeite o FGC</strong>: não deixe mais de ${REGRAS.fgc} num mesmo banco ou financeira.</li>
+        </ul>` }
+    ],
+    fazer: [
+      ['inv-reserva', 'Ter a reserva de emergência pronta antes da renda variável'],
+      ['inv-prazos', 'Separar o dinheiro por prazo: curto em pós-fixado, longo em carteira diversificada'],
+      ['inv-fgc', 'Conferir se nenhum banco passa do limite do FGC'],
+      ['inv-semfgc', 'Manter CRI, CRA e debêntures (sem FGC) como uma parte pequena e espalhada entre emissores'],
+      ['inv-isentos', 'Comparar LCI/LCA com CDB pela taxa depois do imposto'],
+      ['inv-estacoes', 'Ter na carteira algo para cada uma das quatro estações'],
+      ['inv-exterior', 'Ter uma parte em outra moeda ou no exterior'],
+      ['inv-rebalancear', 'Escolher uma data no ano para rebalancear'],
+      ['inv-custos', 'Conferir as taxas de administração e custódia do que eu tenho']
+    ]
+  },
+  {
     id: 'liberdade',
     titulo: 'Liberdade financeira',
     icone: 'umbrella',
@@ -190,7 +298,7 @@ export const TOPICOS = [
       { titulo: 'Como acelerar', html: `<ul>
           <li>Invista um percentual fixo da renda logo ao receber (no Orçamento, a categoria <em>Liberdade financeira</em>).</li>
           <li>Aumentos de renda vão, em boa parte, para o investimento, não para o padrão de vida.</li>
-          <li>Diversifique e pense no longo prazo; taxas altas de administração corroem o resultado.</li>
+          <li>Diversifique e pense no longo prazo; taxas altas de administração corroem o resultado. Veja o guia <a href="#investir">Renda fixa, renda variável e diversificação</a>.</li>
           <li>Invista em você: conhecimento tende a aumentar a renda, e isso acelera tudo.</li>
         </ul>` }
     ],

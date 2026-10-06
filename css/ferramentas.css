@@ -237,3 +237,44 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; line-height
   .container { padding: 0 14px; }
   .card { padding: 18px 16px; }
 }
+
+/* ---------- Gráficos em SVG (Objetivos, Calculadoras, Conselhos) ---------- */
+.svg-grafico { display: block; touch-action: pan-y; }
+.svg-grafico .grid { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; opacity: 0.6; }
+.svg-grafico .grid.base { stroke: var(--text-dim); opacity: 1; }
+.svg-grafico .tick { fill: var(--text-muted); font-family: var(--font); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+.svg-grafico .cross-line { stroke: var(--line-strong); stroke-width: 1; }
+.svg-grafico .cross-dot { stroke: var(--bg-raised); stroke-width: 2; }
+.svg-grafico .hit { fill: transparent; cursor: crosshair; }
+
+/* ---------- Slider (simuladores) ---------- */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 10px 0 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--track) var(--p, 0%));
+}
+.range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--track); }
+.range::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 3px solid var(--accent);
+  transition: transform 160ms var(--ease-out);
+}
+.range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--text); border: 3px solid var(--accent); }
+.range:active::-webkit-slider-thumb { transform: scale(1.15); }
+.range:focus-visible { outline: none; }
+.range:focus-visible::-webkit-slider-thumb { outline: 1.5px solid var(--accent); outline-offset: 2px; }

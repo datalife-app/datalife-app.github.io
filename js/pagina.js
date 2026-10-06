@@ -6,18 +6,19 @@
    ============================================ */
 
 import { LOCAL_MODE } from './config.js';
-import { icon, showToast, registrarSW } from './utils.js';
+import { icon, showToast, registrarSW, initSetasRadio } from './utils.js';
 import { initValidacao } from './validacao.js';
 import { initTemaPicker } from './tema-picker.js';
 import { initAlertas } from './alertas.js';
 
-/** Aviso de modo local, ícone de sair, setas dos links "voltar", avisos de validação e seletor de tema. */
+/** Aviso de modo local, ícone de sair, setas dos links "voltar", avisos de validação, seletor de tema e teclado nos grupos de opções. */
 export function initPagina() {
   aguardarDados();
   registrarSW();
   initValidacao();
   initTemaPicker();
   initAlertas(); // faixa de contas a vencer e datas do Planejador
+  initSetasRadio(); // setas do teclado em todos os grupos de opções
   if (LOCAL_MODE) {
     document.getElementById('local-banner').innerHTML =
       '<div class="local-banner"><b>Modo local</b> · os dados ficam salvos só neste navegador</div>';

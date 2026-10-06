@@ -10,7 +10,7 @@
    Troque VERSAO ao publicar mudanças na lista de arquivos.
    ============================================ */
 
-const VERSAO = 'datalife-v2';
+const VERSAO = 'datalife-v4';
 const SDK = 'https://www.gstatic.com/firebasejs/';
 const SHELL = [
   './',
@@ -18,6 +18,7 @@ const SHELL = [
   './bills.html',
   './books.html',
   './budget.html',
+  './calculators.html',
   './focus.html',
   './goals.html',
   './groceries.html',
@@ -27,6 +28,7 @@ const SHELL = [
   './planner.html',
   './wishlist.html',
   './workouts.html',
+  './css/calculadoras.css',
   './css/compras.css',
   './css/conselhos.css',
   './css/desejos.css',
@@ -46,6 +48,15 @@ const SHELL = [
   './js/alertas.js',
   './js/auth.js',
   './js/backup.js',
+  './js/calc-chart.js',
+  './js/calculadora-aposentadoria.js',
+  './js/calculadora-juros.js',
+  './js/calculadora-meta.js',
+  './js/calculadora-milhao.js',
+  './js/calculadora-renda.js',
+  './js/calculadoras-calc.js',
+  './js/calculadoras-ui.js',
+  './js/calculadoras.js',
   './js/cofre-ui.js',
   './js/compras-db.js',
   './js/compras.js',

@@ -86,7 +86,7 @@ export function renderProjecao(wrap, d) {
   const ultimo = real[real.length - 1];
   const resumo = `Saldo atual ${ultimo ? formatBRL(ultimo.saldo) : formatBRL(0)}; alvo ${formatBRL(d.alvo)} até ${mesCurto(d.prazo)}.`;
   wrap.innerHTML = `
-    <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="proj-svg" role="img" aria-label="${escapeHtml(resumo)}">${svg}</svg>
+    <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="proj-svg svg-grafico" role="img" aria-label="${escapeHtml(resumo)}">${svg}</svg>
     <div class="chart-tip" role="status" hidden></div>`;
 
   const el = wrap.querySelector('svg');

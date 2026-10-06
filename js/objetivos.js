@@ -341,7 +341,7 @@ function renderRitmo(o, r) {
       ${r.status === 'concluido' ? '' : `
       <div class="sim">
         <label class="sim-label" for="sim-range">E se eu guardar <strong class="num" id="sim-val">${formatBRL(sim)}</strong> por mês?</label>
-        <input type="range" class="sim-range" id="sim-range" min="0" max="${maxSim}" step="${step}" value="${Math.min(sim, maxSim)}"
+        <input type="range" class="range" id="sim-range" min="0" max="${maxSim}" step="${step}" value="${Math.min(sim, maxSim)}"
           style="--p:${(Math.min(sim, maxSim) / maxSim) * 100}%" aria-describedby="sim-out">
         <p class="sim-out" id="sim-out" aria-live="polite">${simTexto(o, r.saldo, sim)}</p>
         <button type="button" class="btn btn-ghost btn-sm" id="sim-usar" ${sim === o.mensal ? 'hidden' : ''}>Usar ${formatBRL(sim)} como plano</button>

@@ -139,6 +139,8 @@ const campo = (name, label, valor = '', extra = '') => `
 const pctNum = v => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : 0; };
 const fmtPct = n => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
 
+let observadorDivers = null; // ResizeObserver do gráfico de diversificação (um por vez)
+
 const FERRAMENTAS = {
   async divisao(el) {
     const d = await dados();
@@ -308,6 +310,136 @@ const FERRAMENTAS = {
     render();
   },
 
+  /* Risco de uma carteira com n investimentos de mesmo risco e peso, correlação ρ entre cada par:
+     σp / σ = √(1/n + (1 − 1/n)·ρ). Com ρ = 0, 15 investimentos cortam ~74% do risco; 20, ~78%. */
+  async diversificacao(el) {
+    const CORRS = [0, 0.2, 0.4, 0.6];
+    const COR = ['var(--p-100)', 'var(--p-200)', 'var(--p-300)', 'var(--p-400)']; // rampa: mais correlação, mais escuro
+    const MAX_N = 25, H = 230, PL = 44, PR = 40, PT = 14, PB = 28;
+    const risco = (n, rho) => Math.sqrt(1 / n + (1 - 1 / n) * rho);
+    const fmtRho = c => c.toLocaleString('pt-BR');
+    const st = { n: 15, rho: 0 };
+    el.innerHTML = `
+      <div class="tool" id="tool-divers">
+        <h3 class="tool-title">${icon('activity', 16)} Quanto a diversificação corta o risco</h3>
+        <div class="tool-grid divers-ctrl">
+          <label class="field"><span class="field-label">Quantos investimentos: <strong class="num" id="divers-n-txt"></strong></span>
+            <input type="range" class="range" id="divers-n" min="1" max="${MAX_N}" step="1" value="${st.n}"></label>
+          <div class="field"><span class="field-label" id="divers-rho-label">Correlação entre eles</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="divers-rho-label" id="divers-rho">
+              ${CORRS.map(c => `<button type="button" role="radio" data-rho="${c}" aria-checked="${c === st.rho}" tabindex="${c === st.rho ? 0 : -1}">${fmtRho(c)}</button>`).join('')}
+            </div></div>
+        </div>
+        <div class="divers-chart" id="divers-chart"></div>
+        <div class="tool-out" id="out-divers"></div>
+        <p class="tool-fonte">Conta simplificada: todos os investimentos com o mesmo risco e o mesmo peso. Risco é o quanto a carteira oscila (desvio-padrão). O retorno esperado não muda; só o risco cai.</p>
+      </div>`;
+
+    // Desenho fixo (eixos e curvas) só muda com a largura; o marcador e o destaque mudam por atributo,
+    // sem recriar o SVG (assim dá para arrastar o dedo no gráfico sem perder o toque)
+    let geo = null;
+    const desenhar = () => {
+      const wrap = $('divers-chart');
+      if (!wrap) return;
+      const W = Math.max(wrap.clientWidth || 600, 280);
+      const pw = W - PL - PR, ph = H - PT - PB;
+      const x = n => PL + ((n - 1) / (MAX_N - 1)) * pw;
+      const y = f => PT + (1 - f) * ph;
+      geo = { W, pw, x, y };
+      const ns = Array.from({ length: MAX_N }, (_, i) => i + 1);
+      let svg = [0, 0.25, 0.5, 0.75, 1].map(t => `
+        <line x1="${PL}" x2="${W - PR}" y1="${y(t)}" y2="${y(t)}" class="grid ${t === 0 ? 'base' : ''}"/>
+        <text x="${PL - 8}" y="${y(t)}" class="tick" text-anchor="end" dominant-baseline="middle">${t * 100}%</text>`).join('');
+      svg += [1, 5, 10, 15, 20, 25].map(n => `<text x="${x(n)}" y="${H - 8}" class="tick" text-anchor="middle">${n}</text>`).join('');
+      svg += `<rect x="${x(15)}" y="${PT}" width="${x(20) - x(15)}" height="${ph}" class="divers-faixa"/>
+        <text x="${(x(15) + x(20)) / 2}" y="${PT + 12}" class="divers-faixa-txt" text-anchor="middle">15 a 20</text>`;
+      svg += CORRS.map((c, k) => `
+        <path d="${ns.map((n, i) => `${i ? 'L' : 'M'}${x(n).toFixed(1)},${y(risco(n, c)).toFixed(1)}`).join('')}" class="divers-linha" data-k="${k}" style="stroke:${COR[k]}"/>
+        <text x="${W - PR + 6}" y="${y(risco(MAX_N, c))}" class="divers-rot" data-k="${k}" dominant-baseline="middle">ρ ${fmtRho(c)}</text>`).join('');
+      svg += `<line y1="${PT}" y2="${PT + ph}" class="cross-line" id="divers-cross"/>
+        <circle r="5" class="cross-dot" id="divers-dot"/>
+        <rect class="hit" x="${PL}" y="0" width="${pw}" height="${H}"/>`;
+      wrap.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="svg-grafico divers-svg" role="img">${svg}</svg>
+        <div class="chart-tip" role="status" hidden></div>`;
+      const svgEl = wrap.querySelector('svg');
+      const tip = wrap.querySelector('.chart-tip');
+      const hit = svgEl.querySelector('.hit');
+      const nDe = e => {
+        const r = svgEl.getBoundingClientRect();
+        const ux = (e.clientX - r.left) * (W / r.width); // pixels da tela -> unidades do SVG
+        return Math.max(1, Math.min(MAX_N, Math.round(1 + ((ux - PL) / pw) * (MAX_N - 1))));
+      };
+      const dica = n => {
+        const r = svgEl.getBoundingClientRect();
+        tip.innerHTML = `<strong class="tip-title">${n} ${n === 1 ? 'investimento' : 'investimentos'}</strong>
+          ${CORRS.map((c, i) => `<div class="tip-row"><i style="background:${COR[i]}"></i><span>Correlação ${fmtRho(c)}</span><b class="num">${Math.round(risco(n, c) * 100)}%</b></div>`).join('')}`;
+        tip.hidden = false;
+        const cx = x(n) * (r.width / W), tw = tip.offsetWidth;
+        tip.style.transform = `translate(${Math.max(0, cx + 14 + tw > r.width ? cx - 14 - tw : cx + 14)}px, 8px)`;
+      };
+      let arrastando = false;
+      const escolher = e => { st.n = nDe(e); $('divers-n').value = st.n; atualizar(); dica(st.n); };
+      hit.addEventListener('pointerdown', e => { arrastando = true; hit.setPointerCapture?.(e.pointerId); escolher(e); });
+      hit.addEventListener('pointermove', e => (arrastando ? escolher(e) : dica(nDe(e))));
+      const soltar = () => { arrastando = false; tip.hidden = true; };
+      hit.addEventListener('pointerup', soltar);
+      hit.addEventListener('pointercancel', soltar);
+      hit.addEventListener('pointerleave', () => { if (!arrastando) tip.hidden = true; });
+      atualizar();
+    };
+
+    // Só o que depende de n e ρ: marcador, destaque da curva, textos
+    function atualizar() {
+      if (!geo || !$('divers-chart')) return;
+      const { x, y } = geo;
+      const k = CORRS.indexOf(st.rho), f = risco(st.n, st.rho);
+      const svgEl = $('divers-chart').querySelector('svg');
+      const cross = svgEl.querySelector('#divers-cross'), dot = svgEl.querySelector('#divers-dot');
+      cross.setAttribute('x1', x(st.n));
+      cross.setAttribute('x2', x(st.n));
+      dot.setAttribute('cx', x(st.n));
+      dot.setAttribute('cy', y(f));
+      dot.style.fill = COR[k];
+      svgEl.querySelectorAll('[data-k]').forEach(n => n.classList.toggle('is-on', Number(n.dataset.k) === k));
+      svgEl.setAttribute('aria-label', `Com ${st.n} investimentos e correlação ${fmtRho(st.rho)}, o risco cai para ${Math.round(f * 100)}% do risco de um investimento só.`);
+      const piso = Math.sqrt(st.rho); // risco que sobra mesmo com infinitos investimentos
+      $('divers-n-txt').textContent = st.n;
+      $('divers-n').style.setProperty('--p', `${((st.n - 1) / (MAX_N - 1)) * 100}%`);
+      $('out-divers').innerHTML = `
+        <div class="tool-res is-big"><span>Risco da carteira</span><strong class="num">${Math.round(f * 100)}%</strong>
+          <span class="tool-sub">do risco de ter um investimento só: ${st.n === 1 ? 'sem diversificação' : `<strong>${Math.round((1 - f) * 100)}% a menos</strong>`}</span></div>
+        <div class="tool-res"><span>Mesmo com infinitos investimentos</span><strong class="num">${Math.round(piso * 100)}%</strong>
+          <span class="tool-sub">${st.rho ? `com correlação ${fmtRho(st.rho)}, esse risco nunca sai` : 'sem correlação, o risco tende a zero'}</span></div>
+        <div class="tool-res"><span>Com 20 investimentos de correlação 0</span><strong class="num">${Math.round(risco(20, 0) * 100)}%</strong>
+          <span class="tool-sub">o "Santo Graal": cerca de 80% a menos de risco</span></div>
+        <p class="tool-fonte">${st.rho >= 0.4
+          ? `Repare: com correlação ${fmtRho(st.rho)}, passar de 5 para 25 investimentos só tira mais ${Math.round((risco(5, st.rho) - risco(25, st.rho)) * 100)} pontos de risco. Mais do mesmo não diversifica; o que ajuda é algo diferente.`
+          : `Os primeiros investimentos são os que mais ajudam: de 1 para 5 o risco cai ${Math.round((1 - risco(5, st.rho)) * 100)} pontos; de 20 para 25, só ${Math.round((risco(20, st.rho) - risco(25, st.rho)) * 100)}.`}</p>`;
+    }
+
+    const marcarRho = b => {
+      st.rho = Number(b.dataset.rho);
+      $('divers-rho').querySelectorAll('[data-rho]').forEach(x => {
+        x.setAttribute('aria-checked', String(x === b));
+        x.tabIndex = x === b ? 0 : -1;
+      });
+      atualizar();
+    };
+    $('divers-n').addEventListener('input', e => { st.n = Number(e.target.value); atualizar(); });
+    $('divers-rho').addEventListener('click', e => { const b = e.target.closest('[data-rho]'); if (b) marcarRho(b); });
+
+    // Redesenha quando a largura muda. Um observador por página: o do guia anterior é desligado.
+    let largura = 0;
+    observadorDivers?.disconnect();
+    observadorDivers = new ResizeObserver(([e]) => {
+      const w = Math.round(e.contentRect.width);
+      if (largura && w !== largura) desenhar();
+      largura = w;
+    });
+    observadorDivers.observe($('divers-chart'));
+    desenhar();
+  },
+
   async liberdade(el) {
     const d = await dados();
     el.innerHTML = `
@@ -342,6 +474,7 @@ const FERRAMENTAS = {
 /* ---------- Rotas e eventos ---------- */
 
 function route() {
+  observadorDivers?.disconnect(); // o gráfico de diversificação some ao trocar de tela
   const t = TOPICOS.find(x => `#${x.id}` === location.hash);
   if (t) renderTopico(t); else renderIndice();
   window.scrollTo(0, 0);

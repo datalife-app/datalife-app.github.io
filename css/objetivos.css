@@ -280,52 +280,12 @@
 .sim { margin-top: 18px; }
 .sim-label { display: block; font-size: 0.875rem; }
 .sim-label strong { font-weight: 650; }
-.sim-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 22px;
-  margin: 10px 0 4px;
-  background: transparent;
-  cursor: pointer;
-}
-.sim-range::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--track) var(--p, 0%));
-}
-.sim-range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--track); }
-.sim-range::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
-.sim-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -7px;
-  border-radius: 50%;
-  background: var(--text);
-  border: 3px solid var(--accent);
-  transition: transform 160ms var(--ease-out);
-}
-.sim-range::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--text);
-  border: 3px solid var(--accent);
-}
-.sim-range:active::-webkit-slider-thumb { transform: scale(1.15); }
-.sim-range:focus-visible { outline: none; }
-.sim-range:focus-visible::-webkit-slider-thumb { outline: 1.5px solid var(--accent); outline-offset: 2px; }
 .sim-out { margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); }
 .sim-out strong { color: var(--text); font-weight: 600; }
 
 /* ---------- Gráfico ---------- */
 .proj-card { margin-bottom: 12px; }
 .proj-chart { position: relative; }
-.proj-svg { display: block; touch-action: pan-y; }
-.proj-svg .grid { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; opacity: 0.6; }
-.proj-svg .grid.base { stroke: var(--text-dim); opacity: 1; }
-.proj-svg .tick { fill: var(--text-muted); font-family: var(--font); font-variant-numeric: tabular-nums; font-size: 11.5px; }
 .goal-line { stroke: var(--p-100); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.7; }
 .deadline-line { stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 2 4; }
 .goal-label { fill: var(--text-muted); font-family: var(--font); font-size: 11px; font-weight: 600; }
@@ -333,9 +293,6 @@
 .real-line, .proj-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .proj-line { stroke-dasharray: 5 5; }
 .now-dot { stroke: var(--bg-raised); stroke-width: 2; }
-.cross-line { stroke: var(--line-strong); stroke-width: 1; }
-.cross-dot { stroke: var(--bg-raised); stroke-width: 2; }
-.hit { fill: transparent; cursor: crosshair; }
 .chart-empty { padding: 32px 0; color: var(--text-muted); font-size: 0.875rem; }
 
 .chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.75rem; color: var(--text-muted); }

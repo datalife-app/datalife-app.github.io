@@ -77,6 +77,10 @@ const ICONS = {
   palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 11.994 2z"/>',
   star: '<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
   book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>',
+  percent: '<line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  coins: '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  calculator: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
   quote: '<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>'
 };
 
@@ -218,6 +222,57 @@ export function bindPrivacyToggle(btn) {
   };
   paint();
   btn.addEventListener('click', () => { setPrivacy(!privacy); paint(); });
+}
+
+/**
+ * Teclado em todos os grupos role="radiogroup" do app (padrão ARIA):
+ * - ←/→/↑/↓ focam a opção vizinha e a escolhem com um clique, então cada tela
+ *   reaproveita a lógica de clique que já tem;
+ * - só a opção marcada fica no Tab (ou a primeira, se nenhuma estiver marcada).
+ * Chamado uma vez por initPagina; vale para grupos criados depois (delegação + observador).
+ */
+export function initSetasRadio() {
+  const ativos = g => [...g.querySelectorAll('[role="radio"]')].filter(b => !b.disabled && b.offsetParent !== null);
+  const ajustarTab = g => {
+    const ops = [...g.querySelectorAll('[role="radio"]')];
+    const marcada = ops.find(b => b.getAttribute('aria-checked') === 'true') || ops[0];
+    ops.forEach(b => { b.tabIndex = b === marcada ? 0 : -1; });
+  };
+  document.addEventListener('keydown', e => {
+    const passo = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    const atual = e.target.closest?.('[role="radio"]');
+    const grupo = atual?.closest('[role="radiogroup"]');
+    if (!passo || !grupo || e.altKey || e.ctrlKey || e.metaKey) return;
+    const ops = ativos(grupo);
+    const i = ops.indexOf(atual);
+    if (i < 0 || ops.length < 2) return;
+    e.preventDefault();
+    const prox = ops[(i + passo + ops.length) % ops.length];
+    prox.focus();
+    prox.click();
+  });
+  // Mantém o Tab na opção marcada quando a marcação muda ou um grupo novo aparece
+  const pendentes = new Set();
+  let agendado = false;
+  const agendar = g => {
+    pendentes.add(g);
+    if (agendado) return;
+    agendado = true;
+    requestAnimationFrame(() => { pendentes.forEach(ajustarTab); pendentes.clear(); agendado = false; });
+  };
+  new MutationObserver(muts => {
+    for (const m of muts) {
+      const alvo = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+      if (m.type === 'attributes') { const g = alvo?.closest('[role="radiogroup"]'); if (g) agendar(g); continue; }
+      for (const n of m.addedNodes) {
+        if (n.nodeType !== 1) continue;
+        const g = n.closest('[role="radiogroup"]');
+        if (g) agendar(g);
+        n.querySelectorAll?.('[role="radiogroup"]').forEach(agendar);
+      }
+    }
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-checked'] });
+  document.querySelectorAll('[role="radiogroup"]').forEach(ajustarTab);
 }
 
 /** @param {number} cents */
