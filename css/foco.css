@@ -265,9 +265,9 @@
 
 .pomo-card { display: flex; flex-direction: column; }
 .pomo-controls { display: flex; justify-content: center; align-items: center; gap: 6px; }
-/* Lo-Fi no pé do cartão do pomodoro (margin-top: auto o encosta embaixo) */
+/* Lo-Fi logo abaixo dos controles do pomodoro (não acompanha a altura do cartão) */
 .pomo-controls { margin-bottom: 20px; }
-.pomo-lofi { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); }
+.pomo-lofi { padding-top: 18px; border-top: 1px solid var(--line); }
 .pomo-main { min-width: 136px; }
 .pomo-controls .icon-btn:disabled { opacity: 0.3; }
 
