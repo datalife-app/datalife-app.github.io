@@ -6,9 +6,10 @@
    ============================================ */
 
 import { requireAuth } from './auth.js';
-import { icon } from './utils.js';
+import { icon, escapeHtml } from './utils.js';
 import { initPagina, dadosProntos } from './pagina.js';
 import { initBackup } from './backup.js';
+import { listarAlertas, restaurarDispensados, iconeDe } from './alertas.js';
 
 // Agrupadas por assunto; dentro do grupo, na ordem de uso
 const TOOLS = [
@@ -55,6 +56,60 @@ document.getElementById('tool-list').innerHTML = grupos.map(g => {
     </ul>
   </li>`;
 }).join('');
+
+/* ---------- Alertas (hub.html#alertas, aberto pelo sino da faixa) ---------- */
+// Uma tela dentro do próprio Hub: a lista completa, inclusive o que foi dispensado
+const viewAlertas = document.getElementById('alertas-view');
+const telaHub = [document.querySelector('.hub-head'), document.getElementById('tool-list')];
+
+const itemAlerta = i => `
+  <li><a class="alertas-item${i.atencao ? ' is-atencao' : ''}${i.dispensado ? ' is-dispensado' : ''}" href="${i.href}">
+    <span class="alertas-item-icon">${icon(iconeDe(i), 18)}</span>
+    <span class="alertas-item-txt">${escapeHtml(i.texto)}${i.dispensado ? '<small>Dispensado</small>' : ''}</span>
+    <span class="alertas-item-go">${icon('arrowRight', 16)}</span>
+  </a></li>`;
+
+function grupoAlertas(titulo, itens) {
+  if (!itens.length) return '';
+  return `<div class="alertas-grupo"><h2 class="tool-group-title">${titulo}</h2><ul class="alertas-lista">${itens.map(itemAlerta).join('')}</ul></div>`;
+}
+
+async function renderAlertas() {
+  viewAlertas.innerHTML = `
+    <a class="alertas-voltar" href="hub.html">${icon('chevronLeft', 16)}Hub</a>
+    <h1 id="alertas-title">Alertas</h1>
+    <div class="alertas-corpo"><p class="alertas-vazio">Carregando…</p></div>`;
+  const corpo = viewAlertas.querySelector('.alertas-corpo');
+  let itens;
+  try { itens = await listarAlertas(); } catch {
+    corpo.innerHTML = '<p class="alertas-vazio">Não foi possível carregar os alertas agora.</p>';
+    return;
+  }
+  if (location.hash !== '#alertas') return; // saiu da tela enquanto carregava
+  if (!itens.length) {
+    corpo.innerHTML = '<p class="alertas-vazio">Nada pendente: nenhuma conta perto do vencimento e nenhuma data chegando.</p>';
+    return;
+  }
+  const algumDispensado = itens.some(i => i.dispensado);
+  corpo.innerHTML = `
+    ${grupoAlertas('Contas', itens.filter(i => i.tipo === 'conta'))}
+    ${grupoAlertas('Datas', itens.filter(i => i.tipo === 'evento'))}
+    ${algumDispensado ? '<button class="btn btn-ghost btn-sm alertas-restaurar" type="button">Mostrar os dispensados na faixa de novo</button>' : ''}`;
+  corpo.querySelector('.alertas-restaurar')?.addEventListener('click', () => {
+    restaurarDispensados();
+    renderAlertas();
+  });
+}
+
+function rotaHub() {
+  const alertas = location.hash === '#alertas';
+  viewAlertas.hidden = !alertas;
+  telaHub.forEach(el => { el.hidden = alertas; });
+  document.title = alertas ? 'Alertas · DataLife' : 'Hub · DataLife';
+  if (alertas) { renderAlertas(); window.scrollTo(0, 0); }
+}
+window.addEventListener('hashchange', rotaHub);
+rotaHub();
 
 /* ---------- Instalar como app (PWA) ---------- */
 // Só em celular e tablet. Android/Chrome/Edge: o navegador oferece o convite (beforeinstallprompt).

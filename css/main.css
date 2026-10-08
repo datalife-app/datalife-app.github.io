@@ -796,15 +796,15 @@ input[type="checkbox"]:focus-visible { outline: 1.5px solid var(--accent); outli
 }
 .alerta-bar.is-leaving { opacity: 0; }
 .alerta-inner { display: flex; align-items: center; gap: 10px; min-height: 40px; padding-top: 4px; padding-bottom: 4px; }
-.alerta-icon { display: grid; color: var(--warn); flex-shrink: 0; }
+.alerta-icon { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -7px; border-radius: 8px; color: var(--warn); flex-shrink: 0; transition: background-color 150ms ease; }
 .alerta-list { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 18px; flex: 1; min-width: 0; }
 .alerta-list a { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
 .alerta-list a svg { color: var(--text-muted); flex-shrink: 0; }
 .alerta-list .is-atencao a { color: var(--warn); font-weight: 600; }
-.alerta-mais { color: var(--text-muted); }
 .alerta-x { width: 30px; height: 30px; flex-shrink: 0; }
 @media (hover: hover) and (pointer: fine) {
   .alerta-list a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .alerta-icon:hover { background: color-mix(in srgb, var(--warn) 14%, transparent); }
 }
 
 /* Até os dados chegarem, a página não aceita interação (pagina.js: dadosProntos) */

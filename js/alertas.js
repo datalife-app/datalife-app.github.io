@@ -7,7 +7,8 @@
    - datas do Planejador a 30, 15, 7, 3, 1 dia(s) e no próprio dia.
    Para não gastar leituras do Firestore a cada página, o resultado fica em
    cache na sessão por 10 minutos (as próprias ferramentas limpam o cache
-   quando algo muda). "Dispensar" esconde o que está na faixa até o dia
+   quando algo muda). O sino abre a tela de Alertas no Hub (hub.html#alertas),
+   com a lista completa, inclusive o que foi dispensado. "Dispensar" esconde o que está na faixa até o dia
    seguinte; um aviso novo (outra conta, outro marco) aparece mesmo assim.
    ============================================ */
 
@@ -75,6 +76,8 @@ function dispensar(itens, hoje) {
   } catch { /* ok */ }
 }
 
+export const iconeDe = i => i.tipo === 'conta' ? 'receipt' : 'calendarClock';
+
 function render(itens, hoje) {
   const fora = dispensados(hoje);
   const vis = itens.filter(i => !fora.has(i.chave));
@@ -88,13 +91,11 @@ function render(itens, hoje) {
     // Logo abaixo do cabeçalho (o aviso de modo local fica acima dele)
     (document.querySelector('.topbar') || document.getElementById('local-banner'))?.after(bar);
   }
-  const mostrar = vis.slice(0, 3);
   bar.innerHTML = `
     <div class="container alerta-inner">
-      <span class="alerta-icon" aria-hidden="true">${icon('bell', 16)}</span>
+      <a class="alerta-icon" href="hub.html#alertas" aria-label="Ver todos os alertas" title="Ver todos os alertas">${icon('bell', 16)}</a>
       <ul class="alerta-list">
-        ${mostrar.map(i => `<li class="${i.atencao ? 'is-atencao' : ''}"><a href="${i.href}">${icon(i.tipo === 'conta' ? 'receipt' : 'calendarClock', 13)}${escapeHtml(i.texto)}</a></li>`).join('')}
-        ${vis.length > 3 ? `<li class="alerta-mais">e mais ${vis.length - 3}</li>` : ''}
+        ${vis.map(i => `<li class="${i.atencao ? 'is-atencao' : ''}"><a href="${i.href}">${icon(iconeDe(i), 13)}${escapeHtml(i.texto)}</a></li>`).join('')}
       </ul>
       <button type="button" class="icon-btn alerta-x" aria-label="Dispensar avisos de hoje" title="Dispensar (contas voltam amanhã; datas, no próximo aviso)">${icon('x', 15)}</button>
     </div>`;
@@ -105,19 +106,38 @@ function render(itens, hoje) {
   });
 }
 
+/** Todos os avisos de hoje (do cache da sessão, se ainda valer). null = sem login. */
+async function carregar(hoje) {
+  try {
+    const c = JSON.parse(sessionStorage.getItem(CACHE));
+    if (c && c.dia === hoje && Date.now() - c.em < TTL) return c.itens;
+  } catch { /* sem cache */ }
+  const user = await waitForAuth();
+  if (!user) return null;
+  const itens = await calcular(user.uid, hoje);
+  try { sessionStorage.setItem(CACHE, JSON.stringify({ dia: hoje, em: Date.now(), itens })); } catch { /* ok */ }
+  return itens;
+}
+
+/** Para a tela de Alertas: cada aviso com `dispensado` marcado. */
+export async function listarAlertas() {
+  const hoje = dayKey(new Date());
+  const fora = dispensados(hoje);
+  return ((await carregar(hoje)) || []).map(i => ({ ...i, dispensado: fora.has(i.chave) }));
+}
+
+/** Devolve à faixa tudo o que foi dispensado (a tela de Alertas oferece). */
+export function restaurarDispensados() {
+  try { localStorage.removeItem(DISPENSA); localStorage.removeItem(DISPENSA_EV); } catch { /* ok */ }
+  initAlertas();
+}
+
 /** Mostra a faixa de avisos (chamado por initPagina em todas as ferramentas). */
 export async function initAlertas() {
   const hoje = dayKey(new Date());
   try {
-    const c = JSON.parse(sessionStorage.getItem(CACHE));
-    if (c && c.dia === hoje && Date.now() - c.em < TTL) return render(c.itens, hoje);
-  } catch { /* sem cache */ }
-  try {
-    const user = await waitForAuth();
-    if (!user) return;
-    const itens = await calcular(user.uid, hoje);
-    try { sessionStorage.setItem(CACHE, JSON.stringify({ dia: hoje, em: Date.now(), itens })); } catch { /* ok */ }
-    render(itens, hoje);
+    const itens = await carregar(hoje);
+    if (itens) render(itens, hoje);
   } catch (e) {
     console.warn('Avisos indisponíveis agora:', e); // extra: a página segue normal sem a faixa
   }
