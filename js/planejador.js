@@ -16,7 +16,7 @@ import {
 } from './planejador-db.js';
 import { enhanceSelect } from './selectpicker.js';
 import { enhanceDateInput } from './datepicker.js';
-import { letreiros, icon, escapeHtml, showToast, uid, dayKey, fromDayKey, monthKey, shiftMonth, MESES } from './utils.js';
+import { icon, escapeHtml, showToast, uid, dayKey, fromDayKey, monthKey, shiftMonth, MESES } from './utils.js';
 
 const $ = id => document.getElementById(id);
 const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -58,12 +58,11 @@ function renderCal() {
       <div class="cal-cell ${cls}" data-dia="${k}">
         <button type="button" class="cal-num num" data-novo-dia="${k}" aria-label="Nova data em ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()}">${d.getDate()}</button>
         <ul class="cal-evs">
-          ${evs.slice(0, 3).map(e => `<li><button type="button" class="cal-ev tipo-${e.tipo}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(e.titulo)}">${e.hora ? `<span class="num">${e.hora}</span>` : ''}<span class="letreiro"><span>${escapeHtml(e.titulo)}</span></span></button></li>`).join('')}
+          ${evs.slice(0, 3).map(e => `<li><button type="button" class="cal-ev tipo-${e.tipo}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(e.titulo)}">${e.hora ? `<span class="num">${e.hora}</span>` : ''}<span class="cal-ev-t">${escapeHtml(e.titulo)}</span></button></li>`).join('')}
           ${evs.length > 3 ? `<li class="cal-mais">+${evs.length - 3}</li>` : ''}
         </ul>
       </div>`;
   }).join('');
-  letreiros(document.querySelector('.cal-grid') || document);
 }
 
 /* ---------- Próximas (contagem regressiva) ---------- */
@@ -249,4 +248,3 @@ render();
 dadosProntos(); // um documento por item: sem risco de sobrescrever
 
 // Letreiros dependem da largura das células
-window.addEventListener('resize', () => letreiros(document.querySelector('.cal-grid') || document));
