@@ -36,7 +36,6 @@ function arc(start, end) {
 export function renderDonut(el, slices, { center = '', caption = '', total, active = null, onSelect, onHover } = {}) {
   const visible = slices.filter(s => s.value > 0);
   const sum = total ?? visible.reduce((a, s) => a + s.value, 0);
-  const act = visible.find(s => s.key === active) || null;
   let paths = '';
 
   const attrs = s => `class="slice" data-key="${escapeHtml(s.key)}"

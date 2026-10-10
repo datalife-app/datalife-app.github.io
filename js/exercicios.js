@@ -1,26 +1,48 @@
 /* ============================================
-   DataLife — Exercícios
+   DataLife — Exercícios, Meu treino e Histórico
    ============================================
    Referências: MuscleWiki (mapa do corpo clicável para escolher o
-   músculo) e Hevy (passo a passo, dicas e exercícios próprios).
-   Próprio do DataLife: mídia é um link seu (GIF/imagem aparece direto;
-   YouTube só carrega no clique, pelo youtube-nocookie), mais anotações
-   de carga e ajustes por exercício.
+   músculo), Hevy e Strong (registro de carga por exercício, ajuste do
+   aparelho que fica salvo, sugestão de progressão).
+   Cada exercício da biblioteca já vem com uma animação; um link seu
+   (GIF/imagem aparece direto; YouTube só carrega no clique, pelo
+   youtube-nocookie) substitui a animação.
+   Meu treino: quatro perguntas (experiência, gênero, peso, divisão)
+   geram um plano pronto (treino-data.js). Histórico: carga, repetições
+   e ajustes do aparelho por exercício, com a próxima carga sugerida.
    ============================================ */
 
 import { requireAuth } from './auth.js';
 import { initPagina, persist, dadosProntos } from './pagina.js';
-import { GRUPOS, EQUIPAMENTOS, EXERCICIOS } from './exercicios-data.js';
+import { GRUPOS, EQUIPAMENTOS, EXERCICIOS, animacaoDe, paradoDe, videosDe } from './exercicios-data.js';
 import { fetchDados, saveDados, midiaDe, LIMITES } from './exercicios-db.js';
+import { NIVEIS, GENEROS, DIVISOES, gerarPlano, divisaoIndicada, prescricao, proximaCarga, faixa, fmtKg } from './treino-data.js';
+import { fetchTreino, savePlano, addReg, removeReg, sanitizeReg, LIMITES as LIM_TREINO } from './treino-db.js';
 import { enhanceSelect } from './selectpicker.js';
-import { icon, escapeHtml, showToast, uid, debounce } from './utils.js';
+import { enhanceDateInput } from './datepicker.js';
+import { icon, escapeHtml, showToast, uid, debounce, dayKey, fromDayKey, MESES } from './utils.js';
 
 const $ = id => document.getElementById(id);
 const user = await requireAuth();
 
-const state = { dados: { extras: {}, proprios: [] }, grupo: '', eq: '', busca: '', favs: false, aberto: null, editando: null };
+const state = {
+  dados: { extras: {}, proprios: [] },
+  treino: { plano: null, hist: {} },
+  grupo: '', eq: '', busca: '', favs: false,
+  aberto: null, aba: 'como', editando: null,
+  dia: null,              // dia do plano na tela (A, B, ...)
+  refazendo: false,       // formulário do perfil aberto sobre um plano existente
+  perfil: { nivel: '', genero: '', peso: '', divisao: '' }
+};
 const NOME_GRUPO = Object.fromEntries(GRUPOS.map(g => [g.id, g.nome]));
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const hoje = () => dayKey(new Date());
+const fmtData = k => { const d = fromDayKey(k); return `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3).toLowerCase()}`; };
+const fmtNum = n => n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+
+/** Animação em loop, ou o quadro parado com "reduzir movimento" ligado (WCAG 2.2.2). */
+const animHtml = (id, attrs) =>
+  `<picture><source media="(prefers-reduced-motion: reduce)" srcset="${paradoDe(id)}"><img src="${animacaoDe(id)}" ${attrs}></picture>`;
 
 /* ---------- Mapa do corpo (SVG, frente e costas) ----------
    Desenhado só o lado esquerdo; o direito é o espelho (x -> 120 - x).
@@ -78,12 +100,15 @@ function pintarMapa() {
   $('mapa-todos').hidden = !state.grupo;
 }
 
+
 /* ---------- Lista ---------- */
 
 function todos() {
   const proprios = state.dados.proprios.map(p => ({ ...p, proprio: true, nivel: 'Meu', dicas: [], erros: [], secundarios: [] }));
   return [...EXERCICIOS, ...proprios].map(e => ({ ...e, extra: e.proprio ? e : state.dados.extras[e.id] || {} }));
 }
+const acharEx = id => todos().find(e => e.id === id);
+const temMidia = e => !!(e.extra.midia || animacaoDe(e.id));
 
 function renderLista() {
   const q = norm(state.busca.trim());
@@ -98,11 +123,12 @@ function renderLista() {
   $('ex-lista').innerHTML = lista.map(e => `
     <li>
       <button type="button" class="ex-card" data-id="${escapeHtml(e.id)}">
-        <span class="ex-thumb ${e.extra.midia ? 'has-midia' : ''}" aria-hidden="true">${icon(e.extra.midia ? (midiaDe(e.extra.midia)?.tipo === 'youtube' ? 'play' : 'eye') : 'dumbbell', 18)}</span>
+        <span class="ex-thumb ${temMidia(e) ? 'has-midia' : ''}" aria-hidden="true">${icon(temMidia(e) ? 'play' : 'dumbbell', 18)}</span>
         <span class="ex-info">
           <strong>${escapeHtml(e.nome)}${e.extra.fav ? ` <span class="ex-fav" title="Favorito">${icon('star', 13)}</span>` : ''}</strong>
           <span class="ex-meta">${NOME_GRUPO[e.grupo]}${state.grupo && e.grupo !== state.grupo ? ' (secundário)' : ''} · ${e.equipamento} · ${e.nivel}</span>
         </span>
+        ${state.treino.hist[e.id] ? `<span class="ex-carga num" title="Última carga">${ultimaTxt(state.treino.hist[e.id][0])}</span>` : ''}
       </button>
     </li>`).join('') || '<li class="ex-vazio">Nenhum exercício com esses filtros.</li>';
   const fav = $('so-favs');
@@ -112,16 +138,30 @@ function renderLista() {
 
 /* ---------- Detalhe ---------- */
 
-function midiaHtml(url, nome) {
-  const m = midiaDe(url);
-  if (!m) return `<div class="midia-vazia">${icon('dumbbell', 22)}<p>Cole abaixo o link de um GIF, imagem ou vídeo do YouTube que mostre a execução.</p></div>`;
-  if (m.tipo === 'imagem') return `<img class="midia-img" src="${escapeHtml(m.url)}" alt="Demonstração: ${escapeHtml(nome)}" loading="lazy" referrerpolicy="no-referrer">`;
-  if (m.tipo === 'youtube') return `<button type="button" class="midia-yt" data-yt="${escapeHtml(m.id)}">${icon('play', 22)}<span><strong>Ver o vídeo</strong><small>Carrega o player do YouTube só agora</small></span></button>`;
-  return `<a class="midia-link" href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${icon('externalLink', 16)} Abrir demonstração</a>`;
+function midiaHtml(e) {
+  const m = midiaDe(e.extra.midia);
+  const nome = escapeHtml(e.nome);
+  const videos = `<a class="midia-videos" href="${escapeHtml(videosDe(e.nome))}" target="_blank" rel="noopener noreferrer">${icon('externalLink', 14)} Ver vídeos no YouTube</a>`;
+  let html;
+  if (m?.tipo === 'imagem') html = `<img class="midia-img" src="${escapeHtml(m.url)}" alt="Demonstração: ${nome}" loading="lazy" referrerpolicy="no-referrer">`;
+  else if (m?.tipo === 'youtube') html = `<button type="button" class="midia-yt" data-yt="${escapeHtml(m.id)}">${icon('play', 22)}<span><strong>Ver o vídeo</strong><small>Carrega o player do YouTube só agora</small></span></button>`;
+  else if (m) html = `<a class="midia-link" href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${icon('externalLink', 16)} Abrir demonstração</a>`;
+  else if (animacaoDe(e.id)) html = animHtml(e.id, `class="midia-img midia-anim" alt="Animação: ${nome}, posição inicial e final" width="400" height="270"`);
+  else html = `<div class="midia-vazia">${icon('dumbbell', 22)}<p>Sem animação para este exercício. Se quiser, cole abaixo o link de um GIF ou vídeo.</p></div>`;
+  return html + videos;
+}
+
+/** Em que dia do plano o exercício está (e a prescrição de lá). */
+function noPlano(exId) {
+  for (const d of state.treino.plano?.dias || []) {
+    const item = d.itens.find(i => i.ex === exId);
+    if (item) return { dia: d, item };
+  }
+  return null;
 }
 
 function renderDetalhe() {
-  const e = todos().find(x => x.id === state.aberto);
+  const e = acharEx(state.aberto);
   if (!e) return $('ex-dialog').close();
   $('ex-title').textContent = e.nome;
   $('ex-sub').textContent = [NOME_GRUPO[e.grupo], e.equipamento, e.nivel !== 'Meu' ? e.nivel : 'Meu exercício'].join(' · ');
@@ -132,10 +172,20 @@ function renderDetalhe() {
   fav.setAttribute('aria-label', e.extra.fav ? 'Tirar dos favoritos' : 'Favoritar');
   $('ex-editar').hidden = !e.proprio;
   $('ex-excluir').hidden = !e.proprio;
+  document.querySelectorAll('.ex-abas [data-aba]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.aba === state.aba)));
+  const n = state.treino.hist[e.id]?.length;
+  document.querySelector('.ex-abas [data-aba="hist"]').textContent = n ? `Histórico (${n})` : 'Histórico';
+  renderAddTreino(e);
+  $('ex-body').innerHTML = state.aba === 'hist' ? histHtml(e) : comoHtml(e);
+  const f = $('reg-form');
+  if (f) enhanceDateInput(f.data);
+}
+
+function comoHtml(e) {
   const lista = (titulo, itens, ordenada = false) => itens.length ? `<h3 class="ex-h">${titulo}</h3><${ordenada ? 'ol' : 'ul'} class="ex-ul">${itens.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</${ordenada ? 'ol' : 'ul'}>` : '';
-  $('ex-body').innerHTML = `
+  return `
     <div class="ex-cols">
-      <div class="midia" id="midia">${midiaHtml(e.extra.midia, e.nome)}</div>
+      <div class="midia" id="midia">${midiaHtml(e)}</div>
       <div class="ex-texto">
         ${lista('Como fazer', e.passos, true)}
         ${lista('Dicas', e.dicas)}
@@ -144,15 +194,297 @@ function renderDetalhe() {
       </div>
     </div>
     <form class="ex-meu" id="ex-meu" autocomplete="off">
-      <label class="field"><span class="field-label">Link do GIF, imagem ou vídeo (https)</span>
+      <label class="field"><span class="field-label">Link do GIF, imagem ou vídeo <span class="opcional">(opcional${animacaoDe(e.id) ? ': substitui a animação' : ''})</span></span>
         <input class="input" name="midia" type="url" maxlength="${LIMITES.midia}" value="${escapeHtml(e.extra.midia || '')}" placeholder="https://"></label>
-      <label class="field"><span class="field-label">Minhas anotações (carga, ajustes do aparelho, como me sinto)</span>
-        <textarea class="input" name="nota" rows="2" maxlength="${LIMITES.nota}">${escapeHtml(e.extra.nota || '')}</textarea></label>
-      <div class="ex-meu-foot"><span class="ex-salvo" id="ex-salvo"></span><button class="btn btn-primary btn-sm" type="submit">Salvar</button></div>
+      <label class="field"><span class="field-label">Minhas anotações <span class="opcional">(opcional)</span></span>
+        <textarea class="input" name="nota" rows="2" maxlength="${LIMITES.nota}" placeholder="Ex.: sinto mais no ombro se abrir muito os cotovelos">${escapeHtml(e.extra.nota || '')}</textarea></label>
+      <div class="ex-meu-foot"><button class="btn btn-primary btn-sm" type="submit">Salvar</button></div>
     </form>`;
 }
 
-/* ---------- Gravação ---------- */
+/* ---------- Histórico de um exercício ---------- */
+
+const ultimaTxt = r => (r.carga ? `${fmtKg(r.carga)} × ${r.reps}` : `${r.reps} ${r.reps === 1 ? 'rep' : 'reps'}`);
+const SETA = { subir: 'chevronUp', reduzir: 'chevronDown', manter: 'minus', comecar: 'flag' };
+const ROTULO = { subir: 'Subir carga', reduzir: 'Reduzir', manter: 'Manter', comecar: 'Começar' };
+
+/** Linha da carga ao longo do tempo (só com 2+ registros com carga). */
+function sparkline(regs, w = 220, h = 44) {
+  const pts = regs.filter(r => r.carga).slice().reverse();
+  if (pts.length < 2) return '';
+  const min = Math.min(...pts.map(r => r.carga)), max = Math.max(...pts.map(r => r.carga));
+  const xy = pts.map((r, i) => [4 + i * (w - 8) / (pts.length - 1), h - 6 - (max === min ? 0.5 : (r.carga - min) / (max - min)) * (h - 12)]);
+  const [lx, ly] = xy[xy.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Carga de ${fmtKg(pts[0].carga)} a ${fmtKg(pts[pts.length - 1].carga)}">
+    <polyline points="${xy.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
+}
+
+function sugestaoHtml(s) {
+  if (!s) return '';
+  return `<div class="sugestao is-${s.tipo}"><span class="sugestao-tag">${icon(SETA[s.tipo], 14)}${ROTULO[s.tipo]}</span><p>${escapeHtml(s.texto)}</p></div>`;
+}
+
+function histHtml(e) {
+  const regs = state.treino.hist[e.id] || [];
+  const p = noPlano(e.id);
+  const item = p?.item || null;
+  const sug = proximaCarga(regs, item, e);
+  const ult = regs[0];
+  const fx = faixa(item?.reps);
+  const ajustes = regs.find(r => r.ajustes)?.ajustes || '';
+  const cargaPadrao = sug?.carga ?? ult?.carga ?? '';
+  return `
+    ${p ? `<p class="hist-plano">${icon('listChecks', 14)} No seu treino ${p.dia.id}: <b>${p.item.series} × ${escapeHtml(p.item.reps.replace('-', '–'))}</b>${p.item.descanso ? ` · descanso ${p.item.descanso}s` : ''}</p>` : ''}
+    ${sugestaoHtml(sug)}
+    <form class="reg-form" id="reg-form" autocomplete="off">
+      <div class="reg-grid">
+        <label class="field"><span class="field-label">Data</span><input class="input" name="data" type="date" value="${hoje()}" max="${hoje()}" required></label>
+        <label class="field"><span class="field-label">Carga (kg)</span><input class="input num" name="carga" type="number" inputmode="decimal" min="0" max="${LIM_TREINO.carga}" step="0.5" value="${cargaPadrao}" placeholder="0 = sem carga"></label>
+        <label class="field"><span class="field-label">Séries</span><input class="input num" name="series" type="number" inputmode="numeric" min="1" max="20" step="1" value="${item?.series || ult?.series || 3}" required></label>
+        <label class="field"><span class="field-label">${fx?.tempo ? 'Segundos' : 'Repetições'} <span class="opcional">(série mais fraca)</span></span><input class="input num" name="reps" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="${fx ? `${fx.min}–${fx.max}` : '10'}" required></label>
+      </div>
+      <label class="field"><span class="field-label">Ajustes do aparelho <span class="opcional">(fica salvo para a próxima)</span></span>
+        <input class="input" name="ajustes" maxlength="${LIM_TREINO.ajustes}" value="${escapeHtml(ajustes)}" placeholder="Ex.: banco 4, assento 3, pegada aberta"></label>
+      <label class="field"><span class="field-label">Observação <span class="opcional">(opcional)</span></span>
+        <input class="input" name="nota" maxlength="${LIM_TREINO.nota}" placeholder="Ex.: última série com ajuda"></label>
+      <div class="ex-meu-foot"><button class="btn btn-primary btn-sm" type="submit">${icon('plus', 14)} Registrar</button></div>
+    </form>
+    ${regs.length ? `
+      <div class="hist-resumo">
+        <div><span>Última</span><strong class="num">${ultimaTxt(ult)}</strong><small>${fmtData(ult.data)}</small></div>
+        ${progressoHtml(regs)}
+        <div class="hist-spark">${sparkline(regs)}</div>
+      </div>
+      <ol class="hist-lista">${regs.map(r => `
+        <li>
+          <span class="hist-data num">${fmtData(r.data)}</span>
+          <span class="hist-val"><strong class="num">${ultimaTxt(r)}</strong> · ${r.series} ${r.series === 1 ? 'série' : 'séries'}
+            ${r.ajustes ? `<small>${icon('sliders', 12)} ${escapeHtml(r.ajustes)}</small>` : ''}
+            ${r.nota ? `<small>${escapeHtml(r.nota)}</small>` : ''}</span>
+          <button class="icon-btn danger" type="button" data-del-reg="${escapeHtml(r.id)}" aria-label="Apagar registro de ${fmtData(r.data)}">${icon('trash', 14)}</button>
+        </li>`).join('')}
+      </ol>` : '<p class="hist-vazio">Nenhum registro ainda. Depois do treino, anote a carga e quantas repetições saíram: a próxima carga aparece aqui.</p>'}`;
+}
+
+/** Evolução da carga do primeiro ao último registro. */
+function progressoHtml(regs, tag = 'div') {
+  const comCarga = regs.filter(r => r.carga);
+  if (comCarga.length < 2) return '';
+  const ini = comCarga[comCarga.length - 1].carga, fim = comCarga[0].carga;
+  const d = fim - ini;
+  return `<${tag} class="${d > 0 ? 'is-up' : d < 0 ? 'is-down' : ''}"><span>Evolução</span><strong class="num">${d > 0 ? '+' : d < 0 ? '−' : ''}${fmtKg(Math.abs(d))}</strong><small>${ini ? `${d >= 0 ? '+' : '−'}${fmtNum(Math.abs(d / ini * 100))}% desde ${fmtData(comCarga[comCarga.length - 1].data)}` : ''}</small></${tag}>`;
+}
+
+function registrar(f) {
+  const exId = state.aberto;
+  const reps = Number(f.reps.value);
+  if (f.reps.value === '' || !Number.isInteger(reps) || reps < 0) return f.reps.reportValidity();
+  if (!f.data.value || f.data.value > hoje()) return f.data.reportValidity();
+  // O mesmo objeto que vai ao banco (arrayRemove compara o objeto inteiro ao apagar)
+  const reg = sanitizeReg({
+    id: uid(), data: f.data.value, carga: Math.max(0, Math.round((Number(f.carga.value) || 0) * 10) / 10),
+    series: Math.min(20, Math.max(1, Math.round(Number(f.series.value) || 1))), reps,
+    ajustes: f.ajustes.value.trim(), nota: f.nota.value.trim()
+  });
+  const regs = state.treino.hist[exId] || [];
+  if (regs.length >= LIM_TREINO.regs) return showToast(`Até ${LIM_TREINO.regs} registros por exercício: apague os mais antigos.`, 'error');
+  gravarHist(exId, [reg, ...regs].sort((a, b) => b.data.localeCompare(a.data)), addReg(user.uid, exId, reg));
+  const s = proximaCarga(state.treino.hist[exId], noPlano(exId)?.item, acharEx(exId));
+  showToast(`Registrado: ${ultimaTxt(reg)}.${s?.tipo === 'subir' ? ' Próximo treino: subir a carga.' : ''}`, 'success');
+}
+
+/** Mostra `regs` na hora e espera a escrita (`gravacao`); se falhar, volta ao que era. */
+function gravarHist(exId, regs, gravacao) {
+  const prev = state.treino.hist[exId];
+  if (regs.length) state.treino.hist[exId] = regs; else delete state.treino.hist[exId];
+  renderTudo();
+  return persist(gravacao, () => {
+    if (prev) state.treino.hist[exId] = prev; else delete state.treino.hist[exId];
+    renderTudo();
+  });
+}
+
+/* ---------- Adicionar ao treino (no detalhe) ---------- */
+
+function renderAddTreino(e) {
+  const el = $('add-treino');
+  const plano = state.treino.plano;
+  if (!plano) { el.innerHTML = ''; return; }
+  const em = plano.dias.filter(d => d.itens.some(i => i.ex === e.id)).map(d => d.id);
+  const livres = plano.dias.filter(d => !em.includes(d.id));
+  el.innerHTML = `
+    ${em.length ? `<span class="add-treino-em">${icon('check', 13)} No treino ${em.join(', ')}</span>` : ''}
+    ${livres.length ? `<span class="add-treino-rot">${em.length ? 'Também em' : 'Adicionar ao treino'}</span>${livres.map(d => `<button type="button" class="btn btn-ghost btn-sm add-dia" data-add-dia="${d.id}" title="Adicionar ao treino ${d.id}: ${escapeHtml(d.nome)}">${d.id}</button>`).join('')}` : ''}`;
+}
+
+function adicionarAoDia(exId, diaId) {
+  const plano = structuredClone(state.treino.plano);
+  const dia = plano.dias.find(d => d.id === diaId);
+  if (dia.itens.length >= LIM_TREINO.itens) return showToast(`Até ${LIM_TREINO.itens} exercícios por dia.`, 'error');
+  const ex = acharEx(exId);
+  dia.itens.push({ ex: exId, ...prescricao(exId, plano.perfil.nivel), carga: 0 });
+  gravarPlano(plano, `${ex.nome} entrou no treino ${diaId}.`);
+}
+
+/* ---------- Meu treino ---------- */
+
+function gravarPlano(plano, msg, desfazer = true) {
+  const prev = state.treino.plano;
+  state.treino.plano = plano;
+  if (plano && !plano.dias.some(d => d.id === state.dia)) state.dia = plano.dias[0].id;
+  renderTudo();
+  persist(savePlano(user.uid, plano), () => { state.treino.plano = prev; renderTudo(); })
+    .then(ok => ok && msg && showToast(msg, 'success', 6000, desfazer && prev ? {
+      label: 'Desfazer',
+      onClick: () => gravarPlano(prev, null, false)
+    } : undefined));
+}
+
+const radio = (grupo, valor, atual, html) =>
+  `<button type="button" role="radio" class="opcao" data-q="${grupo}" data-v="${valor}" aria-checked="${valor === atual}">${html}</button>`;
+
+function renderPerfil() {
+  const p = state.perfil;
+  $('q-nivel').innerHTML = NIVEIS.map(n => radio('nivel', n.id, p.nivel, `<strong>${n.nome}</strong><small>${n.desc}</small>`)).join('');
+  $('q-genero').innerHTML = GENEROS.map(g => radio('genero', g.id, p.genero, `<strong>${g.nome}</strong>`)).join('');
+  const indicada = p.nivel ? divisaoIndicada(p.nivel) : '';
+  $('q-divisao').innerHTML = DIVISOES.map(d => radio('divisao', d.id, p.divisao, `
+    <strong>${d.nome}${d.para.includes(p.nivel) ? `<span class="badge-indicado">${d.id === indicada ? 'Indicado' : 'Também serve'}</span>` : ''}</strong>
+    <small class="opcao-freq">${d.freq}</small><small>${d.desc}</small>`)).join('');
+  const f = $('perfil-form');
+  if (document.activeElement !== f.peso) f.peso.value = p.peso || '';
+  $('perfil-cancelar').hidden = !state.treino.plano;
+}
+
+function renderTreino() {
+  const plano = state.treino.plano;
+  const form = !plano || state.refazendo;
+  $('perfil-form').hidden = !form;
+  $('plano').hidden = form;
+  $('btn-refazer').hidden = form;
+  if (form) {
+    $('treino-sub').textContent = plano ? 'Refaça as respostas: o plano novo substitui o atual (o histórico de cargas continua).' : 'Responda quatro perguntas e o DataLife monta uma divisão pronta, com séries, repetições e carga para começar.';
+    return renderPerfil();
+  }
+  const { perfil, dias } = plano;
+  const div = DIVISOES.find(d => d.id === perfil.divisao);
+  $('treino-sub').textContent = `${div.nome} · ${div.freq} · ${NIVEIS.find(n => n.id === perfil.nivel).nome} · ${perfil.peso} kg`;
+  if (!dias.some(d => d.id === state.dia)) state.dia = proximoDia(dias);
+  $('dias-seg').hidden = dias.length < 2;
+  $('dias-seg').innerHTML = dias.map(d => `<button type="button" role="radio" data-dia="${d.id}" aria-checked="${d.id === state.dia}" title="${escapeHtml(d.nome)}">${dias.length > 1 ? `Treino ${d.id}` : 'Treino'}</button>`).join('');
+  $('dias-dica').textContent = dias.length > 1 ? `Sequência: ${dias.map(d => d.id).join(' → ')}, e recomeça.` : 'Um dia de descanso entre os treinos.';
+  const dia = dias.find(d => d.id === state.dia);
+  $('dia-titulo').textContent = dias.length > 1 ? `Treino ${dia.id} · ${dia.nome}` : dia.nome;
+  const series = dia.itens.reduce((a, i) => a + i.series, 0);
+  $('dia-meta').textContent = `${dia.itens.length} exercícios · ${series} séries`;
+  $('plano-lista').innerHTML = dia.itens.map(item => {
+    const e = acharEx(item.ex);
+    if (!e) return '';
+    const regs = state.treino.hist[e.id] || [];
+    const s = proximaCarga(regs, item, e);
+    const feitoHoje = regs[0]?.data === hoje();
+    return `
+      <li class="plano-item ${feitoHoje ? 'is-feito' : ''}" data-ex="${escapeHtml(e.id)}">
+        <button type="button" class="plano-abrir" data-abrir="${escapeHtml(e.id)}">
+          ${animacaoDe(e.id) && !e.extra.midia ? animHtml(e.id, 'class="plano-thumb" alt="" loading="lazy" width="64" height="44"') : `<span class="plano-thumb is-icon" aria-hidden="true">${icon('dumbbell', 18)}</span>`}
+          <span class="plano-info">
+            <strong>${escapeHtml(e.nome)}</strong>
+            <span class="plano-presc num">${item.series} × ${escapeHtml(item.reps.replace('-', '–'))}${item.descanso ? ` · ${item.descanso}s descanso` : ''}</span>
+          </span>
+          <span class="plano-carga">
+            ${regs[0] ? `<strong class="num">${ultimaTxt(regs[0])}</strong><small>${feitoHoje ? 'hoje' : fmtData(regs[0].data)}</small>`
+              : item.carga ? `<strong class="num">~${fmtKg(item.carga)}</strong><small>para começar</small>` : '<small>peso do corpo</small>'}
+            ${s && s.tipo !== 'comecar' ? `<span class="tag-prog is-${s.tipo}" title="${escapeHtml(s.texto)}">${icon(SETA[s.tipo], 12)}${ROTULO[s.tipo]}${s.carga && s.tipo !== 'manter' ? ` ${fmtKg(s.carga)}` : ''}</span>` : ''}
+          </span>
+        </button>
+        <span class="plano-acoes">
+          <button type="button" class="btn btn-ghost btn-sm" data-registrar="${escapeHtml(e.id)}">${feitoHoje ? icon('check', 14) : icon('plus', 14)} Registrar</button>
+          <button type="button" class="icon-btn" data-tirar="${escapeHtml(e.id)}" aria-label="Tirar ${escapeHtml(e.nome)} do treino ${dia.id}">${icon('x', 15)}</button>
+        </span>
+      </li>`;
+  }).join('') || '<li class="ex-vazio">Nenhum exercício neste dia. Adicione pela aba Exercícios.</li>';
+}
+
+/** Sugere o dia seguinte ao último treinado (pela data do último registro de cada dia). */
+function proximoDia(dias) {
+  let ultimo = null, data = '';
+  for (const d of dias) {
+    for (const i of d.itens) {
+      const r = state.treino.hist[i.ex]?.[0];
+      if (r && r.data > data) { data = r.data; ultimo = d; }
+    }
+  }
+  if (!ultimo) return dias[0].id;
+  if (data === hoje()) return ultimo.id; // treino de hoje em andamento
+  return dias[(dias.indexOf(ultimo) + 1) % dias.length].id;
+}
+
+function montarPlano() {
+  const f = $('perfil-form');
+  const p = { ...state.perfil, peso: Math.round(Number(f.peso.value)) };
+  const falta = !p.nivel ? 'q-nivel' : !p.genero ? 'q-genero' : !(p.peso >= 30 && p.peso <= 300) ? 'peso' : !p.divisao ? 'q-divisao' : '';
+  if (falta === 'peso') { f.peso.setCustomValidity('Informe um peso entre 30 e 300 kg.'); f.peso.reportValidity(); f.peso.addEventListener('input', () => f.peso.setCustomValidity(''), { once: true }); return; }
+  if (falta) {
+    showToast('Responda todas as perguntas.', 'error');
+    $(falta).querySelector('[role="radio"]')?.focus();
+    return;
+  }
+  state.perfil = p;
+  const dias = gerarPlano(p, acharEx);
+  state.refazendo = false;
+  state.dia = dias[0].id;
+  gravarPlano({ perfil: p, dias }, `Treino ${DIVISOES.find(d => d.id === p.divisao).nome} montado.`);
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Histórico (aba) ---------- */
+
+function renderHistorico() {
+  const itens = Object.entries(state.treino.hist)
+    .map(([id, regs]) => ({ e: acharEx(id), regs }))
+    .filter(x => x.e)
+    .sort((a, b) => b.regs[0].data.localeCompare(a.regs[0].data));
+  if (!itens.length) {
+    $('historico').innerHTML = `
+      <div class="card hist-vazio-card">
+        <span class="vazio-icon">${icon('trending', 22)}</span>
+        <p><strong>Nenhuma carga registrada ainda.</strong></p>
+        <p class="text-muted">Depois de cada exercício, toque em <b>Registrar</b> no <a href="#plan">Meu treino</a> (ou abra o exercício e vá em Histórico). Aqui aparece a evolução de cada um e os ajustes do aparelho.</p>
+      </div>`;
+    return;
+  }
+  const total = itens.reduce((a, x) => a + x.regs.length, 0);
+  const semanas = new Set(itens.flatMap(x => x.regs.map(r => r.data))).size;
+  $('historico').innerHTML = `
+    <div class="kpis hist-kpis">
+      <div class="kpi"><span class="kpi-label">Exercícios</span><strong class="kpi-value num">${itens.length}</strong></div>
+      <div class="kpi"><span class="kpi-label">Registros</span><strong class="kpi-value num">${total}</strong></div>
+      <div class="kpi"><span class="kpi-label">Dias de treino</span><strong class="kpi-value num">${semanas}</strong></div>
+    </div>
+    <ul class="hist-grid">${itens.map(({ e, regs }) => {
+      const ajustes = regs.find(r => r.ajustes)?.ajustes;
+      const s = proximaCarga(regs, noPlano(e.id)?.item, e);
+      return `
+        <li>
+          <button type="button" class="card hist-card" data-hist="${escapeHtml(e.id)}">
+            <span class="hist-card-head">
+              <strong>${escapeHtml(e.nome)}</strong>
+              <small>${NOME_GRUPO[e.grupo]} · ${regs.length} ${regs.length === 1 ? 'registro' : 'registros'}</small>
+            </span>
+            <span class="hist-card-nums">
+              <span><small>Última · ${fmtData(regs[0].data)}</small><strong class="num">${ultimaTxt(regs[0])}</strong></span>
+              ${progressoHtml(regs, 'span')}
+            </span>
+            <span class="hist-spark">${sparkline(regs, 260, 40)}</span>
+            ${ajustes ? `<span class="hist-ajuste">${icon('sliders', 12)} ${escapeHtml(ajustes)}</span>` : ''}
+            ${s && s.tipo !== 'comecar' ? `<span class="tag-prog is-${s.tipo}">${icon(SETA[s.tipo], 12)}${ROTULO[s.tipo]}${s.carga && s.tipo !== 'manter' ? ` ${fmtKg(s.carga)}` : ''}</span>` : ''}
+          </button>
+        </li>`;
+    }).join('')}</ul>`;
+}
+
+/* ---------- Gravação (biblioteca) ---------- */
 
 function gravar(mudar, msg) {
   const prev = structuredClone(state.dados);
@@ -171,6 +503,50 @@ function setExtra(id, patch) {
     for (const k of Object.keys(patch)) if (!alvo[k]) delete alvo[k];
   });
 }
+
+function renderTudo() {
+  renderLista();
+  renderTreino();
+  renderHistorico();
+  if (state.aberto && $('ex-dialog').open) renderDetalhe();
+}
+
+function abrirExercicio(id, aba = 'como') {
+  state.aberto = id;
+  state.aba = aba;
+  renderDetalhe();
+  if (!$('ex-dialog').open) $('ex-dialog').showModal();
+  if (aba === 'hist') $('reg-form')?.reps.focus();
+}
+
+/* ---------- Abas da página (via hash) ---------- */
+
+const TAB_HASH = { '#library': 'biblioteca', '#plan': 'treino', '#history': 'historico' };
+let abaAtual = null;
+
+function showTab(e) {
+  const tab = TAB_HASH[location.hash] || 'biblioteca';
+  if (e && tab === abaAtual) return;
+  abaAtual = tab;
+  document.title = `${{ biblioteca: 'Exercícios', treino: 'Meu treino', historico: 'Histórico de cargas' }[tab]} · DataLife`;
+  document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== `view-${tab}`; });
+  document.querySelectorAll('.tab').forEach(t => {
+    const ativa = t.dataset.tab === tab;
+    t.classList.toggle('active', ativa);
+    t.setAttribute('aria-selected', ativa);
+  });
+  moverIndicador();
+  if (e) window.scrollTo(0, 0);
+}
+
+function moverIndicador() {
+  const ativa = document.querySelector('.tab.active');
+  if (!ativa) return;
+  $('tab-indicator').style.transform = `translateX(${ativa.offsetLeft}px) scaleX(${ativa.offsetWidth})`;
+  requestAnimationFrame(() => $('tab-indicator').classList.add('ready'));
+}
+
+/* ---------- Eventos ---------- */
 
 function bind() {
   $('btn-proprio').innerHTML = `${icon('plus', 15)} Meu exercício`;
@@ -199,23 +575,44 @@ function bind() {
   $('ex-dialog').addEventListener('close', () => { state.aberto = null; });
   $('ex-lista').addEventListener('click', e => {
     const c = e.target.closest('[data-id]');
-    if (!c) return;
-    state.aberto = c.dataset.id;
-    renderDetalhe();
-    $('ex-dialog').showModal();
+    if (c) abrirExercicio(c.dataset.id);
   });
   $('ex-fav').addEventListener('click', () => {
-    const e = todos().find(x => x.id === state.aberto);
+    const e = acharEx(state.aberto);
     setExtra(e.id, { fav: !e.extra.fav });
+  });
+  document.querySelector('.ex-abas').addEventListener('click', e => {
+    const b = e.target.closest('[data-aba]');
+    if (!b || b.dataset.aba === state.aba) return;
+    state.aba = b.dataset.aba;
+    renderDetalhe();
+  });
+  $('add-treino').addEventListener('click', e => {
+    const b = e.target.closest('[data-add-dia]');
+    if (b) adicionarAoDia(state.aberto, b.dataset.addDia);
   });
   $('ex-body').addEventListener('click', e => {
     const yt = e.target.closest('[data-yt]');
-    if (!yt) return;
-    $('midia').innerHTML = `<div class="midia-frame"><iframe title="Vídeo do exercício" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`;
+    if (yt) {
+      yt.outerHTML = `<div class="midia-frame"><iframe title="Vídeo do exercício" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`;
+      return;
+    }
+    const del = e.target.closest('[data-del-reg]');
+    if (del) {
+      const exId = state.aberto;
+      const regs = state.treino.hist[exId] || [];
+      const reg = regs.find(r => r.id === del.dataset.delReg);
+      gravarHist(exId, regs.filter(r => r !== reg), removeReg(user.uid, exId, reg));
+      showToast(`Registro de ${fmtData(reg.data)} apagado.`, 'success', 6000, {
+        label: 'Desfazer',
+        onClick: () => gravarHist(exId, [...(state.treino.hist[exId] || []), reg].sort((a, b) => b.data.localeCompare(a.data)), addReg(user.uid, exId, reg))
+      });
+    }
   });
   $('ex-body').addEventListener('submit', e => {
     e.preventDefault();
     const f = e.target;
+    if (f.id === 'reg-form') return registrar(f);
     const url = f.midia.value.trim();
     if (url && !midiaDe(url)) {
       f.midia.setCustomValidity('Use um link que comece com https://');
@@ -225,6 +622,46 @@ function bind() {
     }
     setExtra(state.aberto, { midia: midiaDe(url)?.url || '', nota: f.nota.value.trim() });
     showToast('Salvo no exercício.');
+  });
+
+  // Meu treino
+  $('perfil-form').addEventListener('click', e => {
+    const b = e.target.closest('[data-q]');
+    if (!b) return;
+    state.perfil[b.dataset.q] = b.dataset.v;
+    // Ao escolher a experiência, já marca a divisão indicada (se nenhuma foi escolhida)
+    if (b.dataset.q === 'nivel' && !state.perfil.divisao) state.perfil.divisao = divisaoIndicada(b.dataset.v);
+    state.perfil.peso = $('perfil-form').peso.value;
+    renderPerfil();
+    $('perfil-form').querySelector(`[data-q="${b.dataset.q}"][data-v="${b.dataset.v}"]`)?.focus();
+  });
+  $('perfil-form').addEventListener('submit', e => { e.preventDefault(); montarPlano(); });
+  $('btn-refazer').addEventListener('click', () => {
+    state.refazendo = true;
+    state.perfil = { ...state.treino.plano.perfil };
+    renderTreino();
+  });
+  $('perfil-cancelar').addEventListener('click', () => { state.refazendo = false; renderTreino(); });
+  $('dias-seg').addEventListener('click', e => {
+    const b = e.target.closest('[data-dia]');
+    if (b) { state.dia = b.dataset.dia; renderTreino(); $('dias-seg').querySelector(`[data-dia="${state.dia}"]`)?.focus(); }
+  });
+  $('plano-lista').addEventListener('click', e => {
+    const abrir = e.target.closest('[data-abrir]');
+    if (abrir) return abrirExercicio(abrir.dataset.abrir);
+    const reg = e.target.closest('[data-registrar]');
+    if (reg) return abrirExercicio(reg.dataset.registrar, 'hist');
+    const tirar = e.target.closest('[data-tirar]');
+    if (tirar) {
+      const plano = structuredClone(state.treino.plano);
+      const dia = plano.dias.find(d => d.id === state.dia);
+      dia.itens = dia.itens.filter(i => i.ex !== tirar.dataset.tirar);
+      gravarPlano(plano, `${acharEx(tirar.dataset.tirar).nome} saiu do treino ${dia.id}.`);
+    }
+  });
+  $('historico').addEventListener('click', e => {
+    const c = e.target.closest('[data-hist]');
+    if (c) abrirExercicio(c.dataset.hist, 'hist');
   });
 
   // Exercício próprio
@@ -281,16 +718,22 @@ function bind() {
     gravar(d => { d.proprios = d.proprios.filter(x => x.id !== p.id); });
     showToast(`${p.nome} excluído.`, 'success', 8000, { label: 'Desfazer', onClick: () => gravar(d => { d.proprios.push(p); }) });
   });
+
+  window.addEventListener('hashchange', showTab);
+  window.addEventListener('resize', moverIndicador);
+  document.fonts?.ready.then(moverIndicador);
 }
 
 initPagina();
 bind();
 renderMapa();
+showTab();
 try {
-  state.dados = await fetchDados(user.uid);
+  [state.dados, state.treino] = await Promise.all([fetchDados(user.uid), fetchTreino(user.uid)]);
+  if (state.treino.plano) state.perfil = { ...state.treino.plano.perfil };
   dadosProntos();
 } catch (e) {
   console.error(e);
-  showToast('Não foi possível carregar suas anotações e favoritos. Verifique a conexão e recarregue a página.', 'error', 6000);
+  showToast('Não foi possível carregar seus treinos e anotações. Verifique a conexão e recarregue a página.', 'error', 6000);
 }
-renderLista();
+renderTudo();

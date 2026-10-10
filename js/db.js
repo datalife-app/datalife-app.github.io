@@ -4,10 +4,13 @@
    Firestore (por usuário) ou localStorage em modo local.
 
    users/{uid}/settings/metas        { custosFixos: 30, conforto: 10, ... }
-   users/{uid}/settings/recorrentes  { itens: [ {id, cat, desc, valor, dia, desde} ] }
-   users/{uid}/months/{YYYY-MM}      { renda: <total centavos>, rendas: [ {id, desc, valor} ],
-                                       gastos: [ {id, cat, desc, valor, data, rec?} ] }
+   users/{uid}/settings/recorrentes  { itens: [ {id, cat, desc, valor, dia, desde, va?} ] }
+   users/{uid}/months/{YYYY-MM}      { renda: <total centavos>, rendas: [ {id, desc, valor} ], va: centavos,
+                                       gastos: [ {id, cat, desc, valor, data, rec?, va?} ] }
    rec = id do modelo recorrente que gerou o gasto.
+   va  = vale-alimentação/refeição do mês (opcional). Entra na renda, mas vai
+         inteiro para Custos fixos (só paga comida); gastos com `va: true`
+         foram pagos com ele e descontam do saldo do VA.
 
    Escritas são atômicas por campo (arrayUnion/arrayRemove/merge),
    então duas abas ou dispositivos abertos não apagam lançamentos um do outro.
@@ -25,12 +28,13 @@ const CAT_IDS = new Set(CATEGORIAS.map(c => c.id));
 
 function sanitizeGasto(g) {
   if (!g || typeof g !== 'object') return null;
-  const { id, cat, desc, valor, data, rec } = g;
+  const { id, cat, desc, valor, data, rec, va } = g;
   if (!isId(id) || !CAT_IDS.has(cat) || !isText(desc, 80)) return null;
   if (!isCents(valor) || valor === 0) return null;
   if (typeof data !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
   const clean = { id, cat, desc, valor, data };
   if (isId(rec)) clean.rec = rec;
+  if (va === true) clean.va = true;
   return clean;
 }
 
@@ -45,17 +49,18 @@ function sanitizeMonth(raw) {
   const gastos = Array.isArray(raw?.gastos) ? raw.gastos.map(sanitizeGasto).filter(Boolean) : [];
   let rendas = Array.isArray(raw?.rendas) ? raw.rendas.map(sanitizeRenda).filter(Boolean).slice(0, 50) : [];
   const renda = isCents(raw?.renda) ? raw.renda : 0;
+  const va = isCents(raw?.va) ? raw.va : 0;
   // Meses antigos (antes das fontes de renda): vira uma fonte única
-  if (!rendas.length && renda > 0) rendas = [{ id: 'renda', desc: 'Renda', valor: renda }];
-  return { renda: rendas.reduce((a, r) => a + r.valor, 0), rendas, gastos };
+  if (!rendas.length && renda > 0 && !va) rendas = [{ id: 'renda', desc: 'Renda', valor: renda }];
+  return { renda: rendas.reduce((a, r) => a + r.valor, 0) + va, rendas, va, gastos };
 }
 
 function sanitizeRecorrente(t) {
   if (!t || typeof t !== 'object') return null;
-  const { id, cat, desc, valor, dia, desde } = t;
+  const { id, cat, desc, valor, dia, desde, va } = t;
   if (!isId(id) || !CAT_IDS.has(cat) || !isText(desc, 80) || !isCents(valor) || valor === 0) return null;
   if (!Number.isInteger(dia) || dia < 1 || dia > 31 || !MONTH_RE.test(desde)) return null;
-  return { id, cat, desc, valor, dia, desde };
+  return { id, cat, desc, valor, dia, desde, ...(va === true ? { va: true } : {}) };
 }
 
 function sanitizeMetas(raw) {
@@ -122,16 +127,16 @@ export async function fetchAllMonths(uid) {
   return structuredClone(await todos.p); // cópia: quem chama pode mexer à vontade
 }
 
-/** Substitui as fontes de renda do mês (lista pequena) e o total em `renda`. */
-export async function saveRendas(uid, key, rendas) {
+/** Substitui as fontes de renda do mês (lista pequena), o VA e o total em `renda` (fontes + VA). */
+export async function saveRendas(uid, key, rendas, va = 0) {
   assertMonth(key);
   const clean = rendas.map(sanitizeRenda);
-  if (clean.some(r => !r) || clean.length > 50) throw new Error('Renda inválida');
-  const renda = clean.reduce((a, r) => a + r.valor, 0);
+  if (clean.some(r => !r) || clean.length > 50 || !isCents(va)) throw new Error('Renda inválida');
+  const renda = clean.reduce((a, r) => a + r.valor, 0) + va;
   if (!isCents(renda)) throw new Error('Renda inválida');
   sujarMeses();
-  if (LOCAL_MODE) return lsWrite(`months/${key}`, { ...sanitizeMonth(lsRead(`months/${key}`)), rendas: clean, renda });
-  await fs.setDoc(ref(uid, 'months', key), { rendas: clean, renda }, { merge: true });
+  if (LOCAL_MODE) return lsWrite(`months/${key}`, { ...sanitizeMonth(lsRead(`months/${key}`)), rendas: clean, va, renda });
+  await fs.setDoc(ref(uid, 'months', key), { rendas: clean, va, renda }, { merge: true });
 }
 
 /* ---------- Gastos recorrentes (modelos) ---------- */
@@ -234,7 +239,7 @@ export async function importBackup(uid, parsed) {
     const novos = m.gastos.filter(g => !ids.has(g.id));
     const data = {};
     if (novos.length) data.gastos = novos;
-    if (!cur?.renda && m.rendas.length) Object.assign(data, { rendas: m.rendas, renda: m.renda });
+    if (!cur?.renda && (m.rendas.length || m.va)) Object.assign(data, { rendas: m.rendas, va: m.va, renda: m.renda });
     return [m.key, data, cur];
   }).filter(([, data]) => Object.keys(data).length);
 

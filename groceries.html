@@ -57,17 +57,27 @@
 
     <section class="orc-semana" id="orc-semana" aria-label="Orçamento do mercado"></section>
 
-    <form class="add-bar" id="add-form" autocomplete="off">
-      <input class="input" name="item" id="add-item" maxlength="80" placeholder='Adicionar item (ex.: "2 kg arroz")' aria-label="Adicionar item">
-      <button class="btn btn-primary" type="submit" id="add-btn"></button>
-    </form>
     <section class="sempre" id="sempre" aria-label="Itens de sempre" hidden>
       <h2 class="sub-title">De sempre</h2>
       <div class="sempre-list" id="sempre-list"></div>
     </section>
 
-    <div class="lista" id="lista"></div>
-    <div class="totais" id="totais" hidden></div>
+    <!-- A lista é um bloco de papel: pauta, margem e caixinhas de marcar -->
+    <section class="folha" aria-labelledby="folha-titulo">
+      <div class="folha-espiral" aria-hidden="true"></div>
+      <header class="folha-cab">
+        <h2 class="folha-titulo" id="folha-titulo">Comprar</h2>
+        <span class="folha-conta" id="folha-conta"></span>
+      </header>
+      <form class="add-bar" id="add-form" autocomplete="off">
+        <span class="add-marca" aria-hidden="true"></span>
+        <input class="add-input" name="item" id="add-item" maxlength="80" placeholder='Escreva um item (ex.: "2 kg arroz")' aria-label="Adicionar item">
+        <button class="btn btn-primary btn-sm" type="submit" id="add-btn"></button>
+      </form>
+      <div class="lista" id="lista"></div>
+      <div class="totais" id="totais" hidden></div>
+    </section>
+
     <div class="concluir-bar"><button class="btn btn-primary" type="button" id="btn-limpar" disabled></button></div>
   </main>
 
@@ -90,6 +100,37 @@
         <div class="dialog-actions">
           <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
           <button class="btn btn-primary" type="submit">Salvar</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Quanto deu a compra: lança no Orçamento doméstico -->
+  <dialog class="dialog dialog-sm" id="compra-dialog" aria-labelledby="compra-title">
+    <form method="dialog" class="dialog-inner" id="compra-form" autocomplete="off">
+      <header class="dialog-head">
+        <div>
+          <h2 class="dialog-title" id="compra-title">Quanto deu a compra?</h2>
+          <p class="dialog-sub" id="compra-sub"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
+      </header>
+      <div class="form-body">
+        <label class="field"><span class="field-label" id="compra-valor-label">Valor pago</span><input class="input num compra-valor" name="valor" inputmode="numeric" placeholder="R$ 0,00" maxlength="22"></label>
+        <div class="field" id="compra-pag">
+          <span class="field-label" id="compra-pag-label">Pago com</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="compra-pag-label">
+            <button type="button" role="radio" data-pag="va" aria-checked="true">Vale-alimentação</button>
+            <button type="button" role="radio" data-pag="salario" aria-checked="false">Salário</button>
+          </div>
+        </div>
+        <p class="compra-dica" id="compra-dica"></p>
+      </div>
+      <footer class="dialog-foot">
+        <span></span>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-close>Cancelar</button>
+          <button class="btn btn-primary" type="submit" id="compra-ok">Concluir</button>
         </div>
       </footer>
     </form>

@@ -58,7 +58,7 @@ function periodData() {
   return periodKeys().map(key => {
     const m = byKey.get(key) || { key, renda: 0, gastos: [] };
     const gastos = totalGastos(m);
-    return { key, renda: m.renda, gastos, resultado: m.renda - gastos, itens: m.gastos, has: hasData(m) };
+    return { key, renda: m.renda, va: m.va || 0, gastos, resultado: m.renda - gastos, itens: m.gastos, has: hasData(m) };
   });
 }
 
@@ -265,9 +265,11 @@ function renderChart(data) {
 
 function renderCats(data, ganhos, gastos) {
   const metas = ctx.getMetas();
+  // O VA vai inteiro para Custos fixos; as porcentagens valem para o resto da renda
+  const va = data.reduce((a, d) => a + d.va, 0);
   const rows = CATEGORIAS.map(c => {
     const gasto = data.reduce((a, d) => a + d.itens.filter(g => g.cat === c.id).reduce((s, g) => s + g.valor, 0), 0);
-    const meta = Math.round(ganhos * (metas[c.id] || 0) / 100);
+    const meta = Math.round((ganhos - va) * (metas[c.id] || 0) / 100) + (c.id === 'custosFixos' ? va : 0);
     return { c, gasto, meta };
   });
   const max = Math.max(...rows.map(r => Math.max(r.gasto, r.meta)), 1);

@@ -298,10 +298,6 @@ async function renderContexto() {
 
 /* ---------- Resumo: sequência, neste dia, ano em pixels ---------- */
 
-function humorDe(key) {
-  return state.entradas.get(key)?.humor || 0;
-}
-
 function renderNeste() {
   const itens = nesteDia(state.entradas, state.day);
   $('neste').innerHTML = itens.length

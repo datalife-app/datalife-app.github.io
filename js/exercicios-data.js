@@ -2,8 +2,10 @@
    DataLife — Exercícios: biblioteca embutida
    ============================================
    Textos escritos para o DataLife (orientação geral; não substituem um
-   profissional de educação física). Mídia (GIF/vídeo) é o usuário quem
-   escolhe e cola o link, por exercício.
+   profissional de educação física). Cada exercício da biblioteca tem uma
+   animação (assets/exercicios/<id>.webp): as fotos de início e fim do
+   movimento do Free Exercise DB (domínio público), em loop. O link que
+   a pessoa colar (GIF, imagem ou YouTube) substitui a animação.
    ============================================ */
 
 export const GRUPOS = [
@@ -278,3 +280,12 @@ export const EXERCICIOS = [
     'Faça séries de 30 a 60 segundos.'
   ], ['Bom aquecimento e condicionamento.'], ['Pular alto demais e cair com o pé inteiro.'])
 ];
+
+/** Exercícios com animação embutida. */
+const ANIMADOS = new Set(['supino-reto', 'supino-inclinado-halteres', 'crucifixo-polia', 'flexao', 'puxada-frente', 'remada-curvada', 'remada-unilateral', 'barra-fixa', 'desenvolvimento-halteres', 'elevacao-lateral', 'crucifixo-inverso', 'face-pull', 'rosca-direta', 'rosca-alternada', 'rosca-martelo', 'rosca-scott', 'triceps-corda', 'triceps-frances', 'mergulho-banco', 'supino-fechado', 'rosca-punho', 'rosca-punho-inversa', 'farmer-walk', 'prancha', 'abdominal-supra', 'elevacao-pernas', 'pallof-press', 'agachamento-livre', 'leg-press', 'cadeira-extensora', 'afundo', 'stiff', 'mesa-flexora', 'cadeira-flexora', 'good-morning', 'elevacao-pelvica', 'agachamento-sumo', 'abducao-maquina', 'ponte-gluteo', 'panturrilha-pe', 'panturrilha-sentado', 'panturrilha-unilateral', 'pular-corda']);
+export const animacaoDe = id => (ANIMADOS.has(id) ? `assets/exercicios/${id}.webp` : '');
+/** Quadro parado (posição final): para quem pediu menos movimento no sistema. */
+export const paradoDe = id => (ANIMADOS.has(id) ? `assets/exercicios/${id}-parado.webp` : '');
+
+/** Busca de vídeos no YouTube: sempre válida, para quem prefere ver alguém executando. */
+export const videosDe = nome => `https://www.youtube.com/results?search_query=${encodeURIComponent(`como fazer ${nome} execução correta`)}`;

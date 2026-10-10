@@ -40,7 +40,7 @@ export async function setTemplates(next) {
 export const getTemplates = () => templates;
 
 export function templateFrom(g, month, id = uid()) {
-  return { id, cat: g.cat, desc: g.desc, valor: g.valor, dia: Number(g.data.slice(8, 10)) || 1, desde: month };
+  return { id, cat: g.cat, desc: g.desc, valor: g.valor, dia: Number(g.data.slice(8, 10)) || 1, desde: month, ...(g.va ? { va: true } : {}) };
 }
 
 /** Modelos que ainda não têm gasto lançado no mês aberto. */
@@ -53,7 +53,7 @@ export function pendentes() {
 function gastoFrom(t, month) {
   const [y, m] = month.split('-').map(Number);
   const dia = Math.min(t.dia, new Date(y, m, 0).getDate());
-  return { id: uid(), cat: t.cat, desc: t.desc, valor: t.valor, data: `${month}-${String(dia).padStart(2, '0')}`, rec: t.id };
+  return { id: uid(), cat: t.cat, desc: t.desc, valor: t.valor, data: `${month}-${String(dia).padStart(2, '0')}`, rec: t.id, ...(t.va ? { va: true } : {}) };
 }
 
 function launch(list) {

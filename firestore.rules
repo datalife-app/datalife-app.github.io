@@ -66,8 +66,9 @@ service cloud.firestore {
       allow read, delete: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
-        && request.resource.data.keys().hasOnly(['renda', 'rendas', 'gastos'])
+        && request.resource.data.keys().hasOnly(['renda', 'rendas', 'va', 'gastos'])
         && isCents(request.resource.data.get('renda', 0))
+        && isCents(request.resource.data.get('va', 0))
         && request.resource.data.get('rendas', []) is list
         && request.resource.data.get('rendas', []).size() <= 50
         && request.resource.data.get('gastos', []) is list
@@ -344,6 +345,21 @@ service cloud.firestore {
         && request.resource.data.extras.size() <= 300
         && request.resource.data.proprios is list
         && request.resource.data.proprios.size() <= 100;
+    }
+
+    // Treino: o plano e um documento de histórico de cargas por exercício (h_<id>)
+    match /users/{userId}/treino/{doc} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && (
+        (doc == 'plano'
+          && request.resource.data.keys().hasOnly(['perfil', 'dias'])
+          && request.resource.data.perfil is map
+          && request.resource.data.dias is list
+          && request.resource.data.dias.size() <= 6)
+        || (doc.matches('^h_[A-Za-z0-9_-]{1,64}$')
+          && request.resource.data.keys().hasOnly(['regs'])
+          && request.resource.data.regs is list
+          && request.resource.data.regs.size() <= 500));
     }
 
     match /users/{userId}/settings/conselhos {

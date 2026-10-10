@@ -1,0 +1,9 @@
+Animações dos exercícios
+========================
+Geradas a partir das fotos de início e fim do movimento do Free Exercise DB
+(https://github.com/yuhonas/free-exercise-db), dedicado ao domínio público
+pela licença The Unlicense. Cada arquivo alterna as duas posições com uma
+transição suave (WebP animado, 8 fps, 400 px).
+
+<id>-parado.webp: o quadro da posição final, mostrado no lugar da animação
+quando o sistema pede menos movimento (prefers-reduced-motion).

@@ -32,6 +32,12 @@
   <header class="topbar">
     <div class="container topbar-inner">
       <a href="hub.html" class="brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="10"><path d="M33.19 15.04A17 17 0 0 1 33.19 48.96" style="stroke:var(--p-100)"/><path d="M30.81 48.96A17 17 0 0 1 15.01 31.41" style="stroke:var(--p-200)"/><path d="M15.26 29.05A17 17 0 0 1 30.81 15.04" style="stroke:var(--p-300)"/></g></svg><span>Data<em>Life</em></span></a>
+      <nav class="tabs" role="tablist">
+        <a href="#library" class="tab" data-tab="biblioteca" role="tab">Exercícios</a>
+        <a href="#plan" class="tab" data-tab="treino" role="tab"><span class="tab-full">Meu treino</span><span class="tab-short">Treino</span></a>
+        <a href="#history" class="tab" data-tab="historico" role="tab">Histórico</a>
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      </nav>
       <div class="topbar-right">
         <button class="icon-btn" id="btn-tema" type="button" title="Tema" aria-label="Tema"></button>
         <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair"></button>
@@ -39,12 +45,13 @@
     </div>
   </header>
 
-  <main class="container view" id="view-exercicios">
+  <main class="container">
+   <section class="view" id="view-biblioteca" hidden>
     <div class="page-head">
       <div>
         <a href="hub.html" class="back-link" data-back>Hub</a>
         <h1>Exercícios</h1>
-        <p>Escolha o músculo no corpo ou na lista. Em cada exercício, cole o link do GIF ou vídeo que você prefere.</p>
+        <p>Escolha o músculo no corpo ou na lista. Cada exercício mostra a execução em movimento, o passo a passo e o seu histórico de cargas.</p>
       </div>
       <div class="page-head-actions">
         <button class="btn btn-ghost" type="button" id="btn-proprio"></button>
@@ -72,9 +79,79 @@
           </div>
         </div>
         <ul class="ex-lista" id="ex-lista"></ul>
-        <p class="ex-aviso">Orientação geral. Em caso de dor, lesão ou dúvida sobre a carga, procure um profissional de educação física. Para se aprofundar: <a class="link-btn" href="https://www.hipertrofia.org/blog/exercicios-de-musculacao/" target="_blank" rel="noopener noreferrer">Hipertrofia.org</a> · <a class="link-btn" href="https://treinomestre.com.br/melhores-exercicios-musculacao-treino-estudos/" target="_blank" rel="noopener noreferrer">Treino Mestre</a>.</p>
+        <p class="ex-aviso">Animações feitas a partir das fotos do <a class="link-btn" href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener noreferrer">Free Exercise DB</a> (domínio público). Orientação geral. Em caso de dor, lesão ou dúvida sobre a carga, procure um profissional de educação física. Para se aprofundar: <a class="link-btn" href="https://www.hipertrofia.org/blog/exercicios-de-musculacao/" target="_blank" rel="noopener noreferrer">Hipertrofia.org</a> · <a class="link-btn" href="https://treinomestre.com.br/melhores-exercicios-musculacao-treino-estudos/" target="_blank" rel="noopener noreferrer">Treino Mestre</a>.</p>
       </section>
     </div>
+   </section>
+
+   <!-- ============ MEU TREINO ============ -->
+   <section class="view" id="view-treino" hidden>
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Meu treino</h1>
+        <p id="treino-sub">Responda quatro perguntas e o DataLife monta uma divisão pronta, com séries, repetições e carga para começar.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-refazer" hidden>Refazer treino</button>
+      </div>
+    </div>
+
+    <form class="card perfil-form" id="perfil-form" autocomplete="off" hidden>
+      <fieldset class="perfil-q">
+        <legend>1. Há quanto tempo você treina?</legend>
+        <div class="opcoes" role="radiogroup" id="q-nivel"></div>
+      </fieldset>
+      <fieldset class="perfil-q">
+        <legend>2. Gênero</legend>
+        <p class="perfil-why">Muda a carga inicial e, no feminino, põe mais glúteos nos dias de perna.</p>
+        <div class="opcoes opcoes-2" role="radiogroup" id="q-genero"></div>
+      </fieldset>
+      <fieldset class="perfil-q">
+        <legend>3. Seu peso</legend>
+        <p class="perfil-why">Usado só para estimar as cargas iniciais.</p>
+        <label class="peso-field"><input class="input num" name="peso" type="number" inputmode="numeric" min="30" max="300" step="1" placeholder="70" required aria-label="Peso em kg"><span>kg</span></label>
+      </fieldset>
+      <fieldset class="perfil-q">
+        <legend>4. Qual divisão? <span class="perfil-why-inline">AB, ABC, ABCD…</span></legend>
+        <div class="opcoes opcoes-div" role="radiogroup" id="q-divisao"></div>
+      </fieldset>
+      <div class="perfil-foot">
+        <p class="perfil-aviso">Orientação geral, não substitui um profissional de educação física. As cargas são um ponto de partida: na primeira semana, ajuste até a última repetição sair difícil, com técnica.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" id="perfil-cancelar" hidden>Cancelar</button>
+          <button class="btn btn-primary" type="submit">Montar meu treino</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="plano" hidden>
+      <div class="dias-bar">
+        <div class="segmented dias-seg" role="radiogroup" aria-label="Dia do treino" id="dias-seg"></div>
+        <span class="dias-dica" id="dias-dica"></span>
+      </div>
+      <section class="card dia-card" aria-labelledby="dia-titulo">
+        <header class="dia-head">
+          <h2 class="dia-titulo" id="dia-titulo"></h2>
+          <span class="dia-meta" id="dia-meta"></span>
+        </header>
+        <ol class="plano-lista" id="plano-lista"></ol>
+        <p class="plano-dica">Para trocar ou incluir um exercício, abra-o na aba <a href="#library">Exercícios</a> e use "Adicionar ao treino".</p>
+      </section>
+    </div>
+   </section>
+
+   <!-- ============ HISTÓRICO ============ -->
+   <section class="view" id="view-historico" hidden>
+    <div class="page-head">
+      <div>
+        <a href="hub.html" class="back-link" data-back>Hub</a>
+        <h1>Histórico</h1>
+        <p>Carga, repetições e ajustes do aparelho de cada exercício. Toque num exercício para registrar o treino de hoje.</p>
+      </div>
+    </div>
+    <div id="historico"></div>
+   </section>
   </main>
 
   <!-- Detalhe -->
@@ -87,10 +164,15 @@
           <button class="icon-btn" type="button" data-close aria-label="Fechar"></button>
         </div>
       </header>
+      <div class="segmented ex-abas" role="tablist" aria-label="Seções do exercício">
+        <button type="button" role="tab" data-aba="como" aria-selected="true">Como fazer</button>
+        <button type="button" role="tab" data-aba="hist" aria-selected="false">Histórico</button>
+      </div>
       <div class="ex-body" id="ex-body"></div>
       <footer class="dialog-foot" id="ex-foot">
         <button class="btn btn-ghost btn-sm danger-btn" type="button" id="ex-excluir" hidden>Excluir exercício</button>
         <div class="dialog-actions">
+          <div class="add-treino" id="add-treino"></div>
           <button class="btn btn-ghost btn-sm" type="button" id="ex-editar" hidden>Editar</button>
           <button class="btn btn-ghost" type="button" data-close>Fechar</button>
         </div>

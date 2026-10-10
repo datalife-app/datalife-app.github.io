@@ -2,7 +2,9 @@
    DataLife — Fontes de renda do mês
    ============================================
    Lista editável (salário, freela, rendimentos...). O total vira a
-   "Renda do mês" usada nas metas. Trabalha numa cópia: só grava ao Salvar.
+   "Renda do mês" usada nas metas. O vale-alimentação (VA/VR) é opcional:
+   soma na renda e vai inteiro para Custos fixos.
+   Trabalha numa cópia: só grava ao Salvar.
    ============================================ */
 
 import { fetchMonth } from './db.js';
@@ -10,8 +12,9 @@ import { icon, formatBRL, formatBRLRaw, parseBRL, bindCurrencyInput, monthLabel,
 
 const $ = id => document.getElementById(id);
 
-let ctx = null;   // { userId, key, rendas, onSave }
+let ctx = null;   // { userId, key, rendas, va, onSave }
 let rows = [];    // [{ id, desc, valor }]
+const vaInput = () => $('rendas-form').elements.va;
 
 function render(focusLast = false) {
   $('rendas-list').innerHTML = rows.map(r => `
@@ -39,7 +42,7 @@ function sync() {
 
 function renderTotal() {
   // formatBRL respeita o modo privacidade (os inputs já ficam mascarados pelo CSS)
-  $('rendas-total').textContent = formatBRL(rows.reduce((a, r) => a + r.valor, 0));
+  $('rendas-total').textContent = formatBRL(rows.reduce((a, r) => a + r.valor, 0) + parseBRL(vaInput().value));
 }
 
 function save() {
@@ -49,7 +52,7 @@ function save() {
     .filter(r => r.desc.trim() || r.valor)
     .map(r => ({ id: r.id, desc: r.desc.trim() || 'Renda', valor: r.valor }));
   $('rendas-dialog').close();
-  ctx.onSave(clean);
+  ctx.onSave(clean, parseBRL(vaInput().value));
 }
 
 export function initRendasDialog() {
@@ -59,6 +62,8 @@ export function initRendasDialog() {
     b.addEventListener('click', () => dialog.close());
   });
   dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+
+  bindCurrencyInput(vaInput(), () => renderTotal());
 
   $('rendas-add').addEventListener('click', () => {
     sync();
@@ -74,7 +79,7 @@ export function initRendasDialog() {
     } catch {
       prev = { rendas: [] };
     }
-    if (!prev.rendas.length) {
+    if (!prev.rendas.length && !prev.va) {
       showToast(`${monthLabel(prevKey)} não tem renda cadastrada.`, 'error');
       return;
     }
@@ -87,6 +92,7 @@ export function initRendasDialog() {
       if (!atual) rows.push({ id: uid(), desc: r.desc, valor: r.valor });
       else if (!atual.valor) atual.valor = r.valor;
     }
+    if (!parseBRL(vaInput().value) && prev.va) vaInput().value = formatBRLRaw(prev.va);
     render();
   });
 
@@ -108,12 +114,13 @@ export function initRendasDialog() {
 }
 
 /**
- * @param {{userId:string, key:string, rendas:Array, onSave:(rendas:Array)=>void}} options
+ * @param {{userId:string, key:string, rendas:Array, va:number, onSave:(rendas:Array, va:number)=>void}} options
  */
 export function openRendasDialog(options) {
   ctx = options;
   rows = ctx.rendas.map(r => ({ ...r }));
   if (!rows.length) rows.push({ id: uid(), desc: 'Salário', valor: 0 });
+  vaInput().value = ctx.va ? formatBRLRaw(ctx.va) : '';
   $('rendas-title').textContent = 'Renda do mês';
   $('rendas-sub').textContent = `${monthLabel(ctx.key)} · some salário, freelas, rendimentos e outras entradas.`;
   render();

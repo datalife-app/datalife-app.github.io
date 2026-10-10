@@ -6,7 +6,9 @@
        valor: estimativa em centavos · dia: vencimento (1–31) · aviso: dias
        de antecedência do alerta · lancar: ao pagar, lança no Orçamento (cat)
    users/{uid}/pagamentos/{YYYY-MM}
-     { pagas: { <idDaConta>: {em: "YYYY-MM-DD", valor} } }
+     { pagas: { <idDaConta>: {em: "YYYY-MM-DD", valor, gasto?} } }
+       gasto: id do lançamento criado no Orçamento ao pagar (para ajustar
+       ou tirar junto quando o pagamento muda ou é desfeito)
 
    Marcar e desmarcar mexe só na chave da conta (merge / deleteField):
    dois aparelhos não apagam o pagamento um do outro.
@@ -37,7 +39,7 @@ function sanitizeConta(c) {
 function sanitizePagas(raw) {
   const out = {};
   for (const [id, p] of Object.entries(raw || {})) {
-    if (isId(id) && p && DAY_RE.test(p.em) && isCents(p.valor)) out[id] = { em: p.em, valor: p.valor };
+    if (isId(id) && p && DAY_RE.test(p.em) && isCents(p.valor)) out[id] = { em: p.em, valor: p.valor, ...(isId(p.gasto) ? { gasto: p.gasto } : {}) };
   }
   return out;
 }
@@ -109,14 +111,16 @@ export async function fetchPagas(uid, mes) {
 export async function setPaga(uid, mes, contaId, pagamento) {
   if (!MONTH_RE.test(mes) || !isId(contaId)) throw new Error('Pagamento inválido');
   if (pagamento && (!DAY_RE.test(pagamento.em) || !isCents(pagamento.valor))) throw new Error('Pagamento inválido');
+  const dados = pagamento && { em: pagamento.em, valor: pagamento.valor, ...(isId(pagamento.gasto) ? { gasto: pagamento.gasto } : {}) };
   if (LOCAL_MODE) {
     const pagas = sanitizePagas(lsRead(`pagamentos/${mes}`)?.pagas);
-    if (pagamento) pagas[contaId] = { em: pagamento.em, valor: pagamento.valor };
+    if (pagamento) pagas[contaId] = dados;
     else delete pagas[contaId];
     return lsWrite(`pagamentos/${mes}`, { pagas });
   }
   const r = ref(uid, 'pagamentos', mes);
-  if (pagamento) await fs.setDoc(r, { pagas: { [contaId]: { em: pagamento.em, valor: pagamento.valor } } }, { merge: true });
+  // mergeFields troca a entrada da conta inteira (merge comum mesclaria e deixaria um `gasto` antigo)
+  if (pagamento) await fs.setDoc(r, { pagas: { [contaId]: dados } }, { mergeFields: [new fs.FieldPath('pagas', contaId)] });
   else await fs.setDoc(r, { pagas: { [contaId]: fs.deleteField() } }, { merge: true });
 }
 

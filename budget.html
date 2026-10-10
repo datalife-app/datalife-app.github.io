@@ -151,6 +151,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
             Repetir todo mês
           </label>
+          <label class="toggle-chip toggle-va" id="chip-va" title="Desconta do saldo do vale-alimentação" hidden>
+            <input type="checkbox" name="pagoVa">
+            Pago com VA
+          </label>
         </form>
 
         <ul class="gasto-list" id="gasto-list"></ul>
@@ -267,6 +271,11 @@
           <button class="link-btn" type="button" id="rendas-add">Adicionar fonte</button>
           <button class="link-btn" type="button" id="rendas-prev">Copiar do mês anterior</button>
         </div>
+        <label class="field rendas-va">
+          <span class="field-label">Vale-alimentação / refeição <span class="opcional">(opcional)</span></span>
+          <input class="input num" name="va" inputmode="numeric" placeholder="R$ 0,00" maxlength="22">
+          <span class="field-hint">Soma na renda e vai inteiro para Custos fixos. As compras do mercado lançadas pela Lista de compras descontam daqui.</span>
+        </label>
       </div>
       <footer class="dialog-foot">
         <span class="copy-summary">Total <strong class="num" id="rendas-total"></strong></span>

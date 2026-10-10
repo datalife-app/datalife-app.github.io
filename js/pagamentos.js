@@ -14,7 +14,7 @@ import { avisarMudanca } from './alertas.js';
 import {
   fetchContas, saveContas, fetchPagas, setPaga, situacao, quando, AVISOS, LIMITES
 } from './pagamentos-db.js';
-import { addGasto, removeGasto } from './db.js';
+import { addGasto, removeGasto, updateGasto, fetchMonth } from './db.js';
 import { enhanceSelect } from './selectpicker.js';
 import { enhanceDateInput } from './datepicker.js';
 import {
@@ -136,41 +136,65 @@ function render() {
 
 /* ---------- Pagar / desmarcar ---------- */
 
-async function pagar(conta) {
+/* O pagamento guarda o id do lançamento que criou no Orçamento (`gasto`):
+   desfazer ou ajustar o pagamento acha o lançamento por esse id e mexe nele.
+   As escritas não esperam o servidor: offline, o Firestore guarda a fila e
+   tudo sobe junto quando a rede volta (antes, o lançamento só saía depois
+   da confirmação do pagamento e se perdia se a aba fechasse no meio). */
+
+/** Lançamento do Orçamento ligado a um pagamento (lido do cache local se offline). */
+async function lancamentoDe(pagamento) {
+  if (!pagamento?.gasto) return null;
+  const m = await fetchMonth(user.uid, pagamento.em.slice(0, 7));
+  return m.gastos.find(g => g.id === pagamento.gasto) || null;
+}
+
+function pagar(conta) {
   const mes = state.mes;
-  const pagamento = { em: state.hoje, valor: conta.valor }; // pago hoje (antes ou depois do vencimento)
+  const gasto = conta.lancar && conta.valor
+    ? { id: uid(), cat: conta.cat, desc: conta.nome, valor: conta.valor, data: state.hoje }
+    : null;
+  const pagamento = { em: state.hoje, valor: conta.valor, ...(gasto ? { gasto: gasto.id } : {}) }; // pago hoje (antes ou depois do vencimento)
   state.pagas = { ...state.pagas, [conta.id]: pagamento };
   render();
   avisarMudanca();
-  const ok = await persist(setPaga(user.uid, mes, conta.id, pagamento), () => {
+  persist(setPaga(user.uid, mes, conta.id, pagamento), () => {
     const { [conta.id]: _, ...resto } = state.pagas;
     state.pagas = resto;
     render();
   });
-  if (!ok) return;
-  let gasto = null;
-  if (conta.lancar && conta.valor) {
-    gasto = { id: uid(), cat: conta.cat, desc: conta.nome, valor: conta.valor, data: pagamento.em };
-    if (!await persist(addGasto(user.uid, pagamento.em.slice(0, 7), gasto), null, 'Paga, mas não foi possível lançar no Orçamento.')) gasto = null;
-  }
+  if (gasto) persist(addGasto(user.uid, gasto.data.slice(0, 7), gasto), null, 'Paga, mas não foi possível lançar no Orçamento.');
   showToast(`${conta.nome}: paga${gasto ? ' e lançada no Orçamento' : ''}.`, 'success', 6000, {
     label: 'Desfazer',
-    onClick: () => desmarcar(conta, mes, gasto)
+    onClick: () => desmarcar(conta, mes, pagamento)
   });
 }
 
-async function desmarcar(conta, mes, gasto) {
-  const prev = state.pagas[conta.id];
+/** Tira o pagamento (e o lançamento que ele criou no Orçamento). */
+async function desmarcar(conta, mes, pagamento = state.pagas[conta.id]) {
   if (mes === state.mes) {
     const { [conta.id]: _, ...resto } = state.pagas;
     state.pagas = resto;
     render();
   }
   avisarMudanca();
-  await persist(setPaga(user.uid, mes, conta.id, null), () => {
-    if (mes === state.mes) { state.pagas = { ...state.pagas, [conta.id]: prev }; render(); }
+  persist(setPaga(user.uid, mes, conta.id, null), () => {
+    if (mes === state.mes) { state.pagas = { ...state.pagas, [conta.id]: pagamento }; render(); }
   });
-  if (gasto) await persist(removeGasto(user.uid, gasto.data.slice(0, 7), gasto), null, 'Não foi possível tirar o lançamento do Orçamento.');
+  const g = await lancamentoDe(pagamento).catch(() => null);
+  if (g) persist(removeGasto(user.uid, g.data.slice(0, 7), g), null, 'Não foi possível tirar o lançamento do Orçamento.');
+}
+
+/** Pagamento ajustado (data/valor): o lançamento do Orçamento acompanha, inclusive se mudar de mês. */
+async function ajustarLancamento(antes, depois) {
+  const g = await lancamentoDe(antes).catch(() => null);
+  if (!g) return;
+  const novo = { ...g, valor: depois.valor, data: depois.em };
+  const msg = 'Pagamento ajustado, mas o lançamento do Orçamento não foi atualizado.';
+  if (!novo.valor) return persist(removeGasto(user.uid, g.data.slice(0, 7), g), null, msg);
+  if (g.data.slice(0, 7) === novo.data.slice(0, 7)) return persist(updateGasto(user.uid, g.data.slice(0, 7), g, novo), null, msg);
+  persist(removeGasto(user.uid, g.data.slice(0, 7), g), null, msg);
+  persist(addGasto(user.uid, novo.data.slice(0, 7), novo), null, msg);
 }
 
 /* ---------- Dialogs ---------- */
@@ -280,16 +304,17 @@ function bind() {
     const pf = e.target;
     const conta = state.pagando;
     const prev = state.pagas[conta.id];
-    const pagamento = { em: pf.em.value, valor: parseBRL(pf.valor.value) };
+    const pagamento = { em: pf.em.value, valor: parseBRL(pf.valor.value), ...(prev?.gasto ? { gasto: prev.gasto } : {}) };
     $('pago-dialog').close();
     state.pagas = { ...state.pagas, [conta.id]: pagamento };
     render();
-    persist(setPaga(user.uid, state.mes, conta.id, pagamento), () => { state.pagas = { ...state.pagas, [conta.id]: prev }; render(); })
-      .then(ok => ok && showToast('Pagamento ajustado.'));
+    persist(setPaga(user.uid, state.mes, conta.id, pagamento), () => { state.pagas = { ...state.pagas, [conta.id]: prev }; render(); });
+    if (prev && (prev.em !== pagamento.em || prev.valor !== pagamento.valor)) ajustarLancamento(prev, pagamento);
+    showToast('Pagamento ajustado.');
   });
   $('pago-desfazer').addEventListener('click', () => {
     $('pago-dialog').close();
-    desmarcar(state.pagando, state.mes, null);
+    desmarcar(state.pagando, state.mes);
   });
 }
 

@@ -4,20 +4,73 @@
 
 .sub-title { margin-bottom: 8px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
 
+/* ---------- A folha: bloco de papel pautado ----------
+   Furos no topo, linha dupla no cabeçalho, margem vertical com as
+   caixinhas à esquerda e uma linha de pauta por item. Tudo derivado
+   dos tokens do tema (funciona nos temas claros e escuros). */
+.folha {
+  --margem-x: 48px;                                              /* onde fica a linha da margem */
+  --linha: 48px;                                                 /* altura de uma linha da pauta */
+  --papel: var(--bg-raised);
+  --pauta: color-mix(in srgb, var(--p-300) 30%, transparent);
+  --margem: color-mix(in srgb, var(--danger) 55%, transparent);
+  --tinta: var(--accent);                                        /* "caneta" que risca o item */
+  --folha-fundo: linear-gradient(to right, transparent calc(var(--margem-x) - 1px), var(--margem) calc(var(--margem-x) - 1px) var(--margem-x), transparent var(--margem-x)), var(--papel);
+  position: relative;
+  margin-top: 18px;
+  background: var(--folha-fundo);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 0 var(--line), 0 3px 0 -1px var(--papel), 0 4px 0 -1px var(--line), 0 10px 24px rgb(0 0 0 / 0.18);
+}
+/* Furos de bloco (mostram o fundo da página) e picote */
+.folha-espiral {
+  height: 26px;
+  background: radial-gradient(circle at 50% 13px, var(--bg) 0 5px, var(--line-strong) 5.5px 6.5px, transparent 7px) center top / 30px 26px repeat-x var(--papel);
+  border-bottom: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.folha-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px 10px calc(var(--margem-x) + 14px);
+  background: var(--papel);
+  border-bottom: 3px double var(--margem);
+}
+.folha-titulo { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; letter-spacing: var(--track-title); }
+.folha-conta { font-size: 0.75rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* Linha de escrever: a próxima linha em branco da folha (fixa no topo ao rolar) */
 .add-bar {
   position: sticky;
   top: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 10px 0;
-  background: var(--bg);
+  grid-template-columns: var(--margem-x) minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 56px;
+  padding-right: 10px;
+  background: var(--folha-fundo);
+  border-bottom: 1px solid var(--pauta);
 }
-.add-bar .input { height: 46px; font-size: 1rem; }
-.add-bar .btn { height: 46px; }
+.add-marca { justify-self: center; width: 18px; height: 18px; border: 1.5px dashed var(--line-strong); border-radius: 3px; }
+.add-input {
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.02rem;
+}
+.add-input::placeholder { color: var(--text-dim); font-style: italic; }
+.add-input:focus { outline: none; }
+.add-bar:focus-within { box-shadow: inset 0 -2px 0 var(--tinta); }
 
-.sempre { margin: 6px 0 18px; }
+.sempre { margin: 14px 0 0; }
 .sempre-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .sempre-chip {
   display: inline-flex;
@@ -25,8 +78,8 @@
   gap: 5px;
   height: 34px;
   padding: 0 12px 0 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
   font-size: 0.82rem;
   color: var(--text-muted);
   transition: border-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
@@ -34,84 +87,114 @@
 .sempre-chip svg { color: var(--accent); }
 .sempre-chip:active { transform: scale(0.95); }
 
-.lista { display: flex; flex-direction: column; gap: 18px; margin-top: 8px; }
-.corredor-title { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.82rem; font-weight: 650; color: var(--text-muted); }
-.corredor-title .num { font-weight: 500; color: var(--text-dim); }
-.itens { list-style: none; background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); }
+/* ---------- Itens ---------- */
+.lista { display: flex; flex-direction: column; }
+.corredor-title {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 16px 5px calc(var(--margem-x) + 14px);
+  border-bottom: 1px solid var(--pauta);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.corredor-title .num { font-weight: 500; letter-spacing: 0; }
+.corredor-title svg { align-self: center; margin-top: 10px; }
+.itens { list-style: none; }
 .item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  min-height: var(--linha);
   padding-right: 6px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--pauta);
 }
-.item:last-child { border-bottom: none; }
 .item.is-novo { transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out); @starting-style { opacity: 0; transform: translateY(-4px); } }
 .item-check {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--margem-x) minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 52px;
+  min-height: var(--linha);
   min-width: 0;
-  padding: 8px 12px;
+  padding: 6px 0;
   text-align: left;
 }
-.bolinha {
+/* Caixinha de marcar, na margem */
+.caixa {
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--line-strong);
-  color: var(--on-accent);
-  transition: background-color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out);
+  justify-self: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  color: var(--tinta);
+  transition: border-color 150ms ease, transform 160ms var(--ease-out);
 }
-.bolinha svg { opacity: 0; transform: scale(0.6); transition: opacity 150ms ease, transform 180ms var(--ease-out); }
-.item-check:active .bolinha { transform: scale(0.9); }
-.is-feito .bolinha { background: var(--ok); border-color: var(--ok); }
-.is-feito .bolinha svg { opacity: 1; transform: scale(1); }
-.item-nome { font-size: 0.95rem; overflow-wrap: anywhere; }
-.is-feito .item-nome { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--p-300); }
-.item-qtd { flex-shrink: 0; padding: 1px 8px; border-radius: 999px; background: var(--track); font-size: 0.75rem; color: var(--text-muted); }
-.item-preco { font-size: 0.82rem; color: var(--text-muted); }
-.carrinho .itens { background: transparent; border-style: dashed; }
-.tudo-ok { padding: 8px 2px; color: var(--ok); font-weight: 600; }
+.caixa svg { stroke-width: 3; opacity: 0; transform: scale(0.5) rotate(-12deg); transition: opacity 150ms ease, transform 200ms var(--ease-out); }
+.item-check:active .caixa { transform: scale(0.88); }
+.is-feito .caixa { border-color: var(--tinta); }
+.is-feito .caixa svg { opacity: 1; transform: scale(1.15) rotate(-6deg); }
+.item-texto { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding-left: 14px; }
+.item-nome { font-size: 1.02rem; overflow-wrap: anywhere; }
+.item-qtd { flex-shrink: 0; font-size: 0.85rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+/* Riscado à caneta */
+.is-feito .item-nome, .is-feito .item-qtd {
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--tinta);
+  text-decoration-thickness: 2px;
+}
+.item-preco { font-size: 0.85rem; color: var(--text-muted); }
+.is-feito .item-preco { color: var(--text-dim); }
+.item .icon-btn { color: var(--text-dim); }
+.carrinho .corredor-title { margin-top: 10px; }
+.tudo-ok { min-height: var(--linha); display: flex; align-items: center; padding-left: calc(var(--margem-x) + 14px); border-bottom: 1px solid var(--pauta); color: var(--ok); font-weight: 600; }
 
-.lista-vazia { padding: 28px 22px; text-align: center; background: var(--bg-raised); border: 1px dashed var(--line-strong); border-radius: var(--radius); }
-.lista-vazia .vazio-icon { margin-bottom: 10px; }
-.lista-vazia p { color: var(--text-muted); }
-.lista-vazia strong { color: var(--text); }
-
-.totais {
-  position: sticky;
-  bottom: 0;
+.pauta { height: var(--linha); border-bottom: 1px solid var(--pauta); }
+.lista-vazia {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: var(--bg-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
+  align-items: center;
+  min-height: var(--linha);
+  padding: 6px 16px 6px calc(var(--margem-x) + 14px);
+  border-bottom: 1px solid var(--pauta);
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
-.totais strong { font-family: var(--font-display); font-size: 1.05rem; color: var(--text); font-variant-numeric: proportional-nums; }
+.lista-vazia strong { margin-right: 4px; color: var(--text); }
+
+/* Totais no pé da folha, com pontilhado até o valor */
+.totais { padding: 14px 16px 18px calc(var(--margem-x) + 14px); background: var(--papel); border-top: 3px double var(--margem); border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.total-linha { display: flex; align-items: baseline; gap: 8px; font-size: 0.88rem; color: var(--text-muted); }
+.total-linha + .total-linha { margin-top: 6px; }
+.total-linha i { flex: 1; min-width: 16px; border-bottom: 2px dotted var(--line-strong); transform: translateY(-3px); }
+.total-linha strong { font-family: var(--font-display); font-size: 1.05rem; color: var(--text); font-variant-numeric: proportional-nums; }
 
 @media (hover: hover) and (pointer: fine) {
   .sempre-chip:hover { border-color: var(--p-300); color: var(--text); }
-  .item-check:hover .bolinha { border-color: var(--p-300); }
+  .item:hover { background: var(--tint-soft); }
+  .item-check:hover .caixa { border-color: var(--tinta); }
+  .item .icon-btn:hover { color: var(--text); }
 }
 
 @media (max-width: 640px) {
+  .folha { --margem-x: 40px; margin-left: -6px; margin-right: -6px; }
+  .folha-cab { padding-right: 12px; }
   .add-txt { display: none; }
-  .add-bar .btn { width: 46px; padding: 0; }
+  .add-bar .btn { width: 36px; padding: 0; justify-content: center; }
   /* "De sempre" rola para o lado: não empurra a lista para baixo */
   .sempre-list { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
   .sempre-list::-webkit-scrollbar { display: none; }
   .sempre-chip { flex-shrink: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caixa svg, .item.is-novo { transition: none; }
 }
 
 /* ---------- Orçamento da semana (VR/VA) ---------- */
@@ -127,7 +210,20 @@
 .orc-linha { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); }
 .orc-linha strong { color: var(--text); font-weight: 650; margin-left: 4px; }
 .orc-card.is-acima .orc-linha span:last-child strong { color: var(--warn); }
-.orc-dica { margin-top: 8px; font-size: 0.72rem; color: var(--text-dim); }
+.orc-pe { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.orc-dica { font-size: 0.72rem; color: var(--text-dim); }
+.orc-pe .link-btn { font-size: 0.8rem; }
+.orc-va { margin-top: 6px; }
+.orc-va.is-acima strong { color: var(--warn); }
+.orc-form-dica { grid-column: 1 / -1; font-size: 0.75rem; color: var(--text-dim); }
+.orc-form-dica a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.orc-form-dica .link-btn { margin-left: 6px; font-size: 0.75rem; }
+
+/* ---------- Quanto deu a compra ---------- */
+.compra-valor { font-size: 1.15rem; height: 46px; }
+#compra-pag .segmented { display: flex; }
+#compra-pag .segmented button { flex: 1; }
+.compra-dica { font-size: 0.78rem; color: var(--text-dim); line-height: 1.45; }
 .orc-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 8px; padding: 16px 18px; background: var(--bg-raised); border: 1px dashed var(--line-strong); border-radius: var(--radius); }
 .orc-form .field { min-width: 0; }
 

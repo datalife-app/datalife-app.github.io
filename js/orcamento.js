@@ -29,8 +29,9 @@ const user = await requireAuth();
 
 const state = {
   month: monthKey(new Date()),
-  renda: 0,
+  renda: 0,           // fontes + VA
   rendas: [],
+  va: 0,              // vale-alimentação do mês (opcional)
   gastos: [],
   metas: defaultMetas(),
   cat: CATEGORIAS[0].id,
@@ -59,6 +60,7 @@ async function loadMonth(key, pre) {
   state.month = key;
   state.renda = 0;
   state.rendas = [];
+  state.va = 0;
   state.gastos = [];
   state.editingId = null;
   state.focusGastos = null;
@@ -82,6 +84,7 @@ async function loadMonth(key, pre) {
 
   state.renda = data.renda;
   state.rendas = data.rendas;
+  state.va = data.va;
   state.gastos = data.gastos;
   setDefaultDate();
   setMonthBusy(false);
@@ -110,7 +113,10 @@ function gastoPorCat() {
 }
 
 const somaMetas = () => CATEGORIAS.reduce((a, c) => a + (state.metas[c.id] || 0), 0);
-const devoGastar = catId => Math.round(state.renda * (state.metas[catId] || 0) / 100);
+/** O VA só paga comida: vai inteiro para Custos fixos; as metas dividem o resto da renda. */
+const devoGastar = catId =>
+  Math.round((state.renda - state.va) * (state.metas[catId] || 0) / 100) + (catId === 'custosFixos' ? state.va : 0);
+const gastoVA = () => state.gastos.reduce((a, g) => a + (g.va ? g.valor : 0), 0);
 
 /* ---------- Orçamento doméstico ---------- */
 
@@ -183,7 +189,7 @@ function renderRenda() {
   $('renda-total').textContent = state.renda ? formatBRL(state.renda) : 'Definir renda';
   $('renda').classList.toggle('is-empty', !state.renda);
   const n = state.rendas.length;
-  $('renda-fontes').textContent = n > 1 ? `${n} fontes` : '';
+  $('renda-fontes').textContent = [n > 1 ? `${n} fontes` : '', state.va ? `VA ${formatBRL(state.va)}` : ''].filter(Boolean).join(' · ');
 }
 
 function editRendas() {
@@ -191,14 +197,16 @@ function editRendas() {
     userId: user.uid,
     key: state.month,
     rendas: state.rendas,
-    onSave: rendas => {
+    va: state.va,
+    onSave: (rendas, va) => {
       const key = state.month;
-      const prev = { renda: state.renda, rendas: state.rendas };
+      const prev = { renda: state.renda, rendas: state.rendas, va: state.va };
       state.rendas = rendas;
-      state.renda = rendas.reduce((a, r) => a + r.valor, 0);
+      state.va = va;
+      state.renda = rendas.reduce((a, r) => a + r.valor, 0) + va;
       renderOrcamento();
       renderMetas();
-      persist(saveRendas(user.uid, key, rendas), () => {
+      persist(saveRendas(user.uid, key, rendas, va), () => {
         if (state.month !== key) return;
         Object.assign(state, prev);
         renderOrcamento();
@@ -281,6 +289,14 @@ function renderCatPanel(porCat) {
     <div><span>Gasto</span><strong class="num">${formatBRL(gasto)}</strong></div>
     <div><span>Meta</span><strong class="num">${formatBRL(devo)}</strong></div>
     <div class="${restam < 0 ? 'is-over' : ''}"><span>${restam < 0 ? 'Excedeu' : 'Restam'}</span><strong class="num">${formatBRL(Math.abs(restam))}</strong></div>`;
+  const comVA = cat.id === 'custosFixos' && state.va > 0;
+  if (comVA) {
+    const saldo = state.va - gastoVA();
+    $('cat-stats').insertAdjacentHTML('beforeend',
+      `<div class="${saldo < 0 ? 'is-over' : ''}"><span>${saldo < 0 ? 'VA estourou' : 'Saldo do VA'}</span><strong class="num">${formatBRL(Math.abs(saldo))}</strong></div>`);
+  }
+  $('chip-va').hidden = !comVA;
+  if (!comVA) $('gasto-form').elements.pagoVa.checked = false;
 
   const bar = $('cat-progress');
   bar.style.setProperty('--c', cat.cor);
@@ -309,7 +325,7 @@ function viewRow(g) {
     <li class="${g.id === lastAddedId ? 'is-new' : ''}">
       <button type="button" class="row-edit" data-edit="${id}" title="Editar">
         <span class="day num">${escapeHtml(formatDay(g.data))}</span>
-        <span class="desc">${desc}</span>
+        <span class="desc">${desc}${g.va ? ' <span class="va-tag" title="Pago com vale-alimentação">VA</span>' : ''}</span>
         <span class="val num">${formatBRL(g.valor)}</span>
       </button>
       <span class="row-actions">
@@ -477,6 +493,7 @@ function bindOrcamento() {
     }
     const key = state.month;
     const gasto = { id: uid(), cat: state.cat, desc, valor, data: form.elements.data.value };
+    if (form.elements.pagoVa.checked && state.cat === 'custosFixos' && state.va > 0) gasto.va = true;
     if (form.elements.repetir.checked) {
       const t = templateFrom(gasto, key);
       gasto.rec = t.id;
@@ -750,7 +767,7 @@ initRecorrentes({
 });
 initSearchDialog({
   userId: user.uid,
-  getLive: () => ({ key: state.month, renda: state.renda, gastos: state.gastos }),
+  getLive: () => ({ key: state.month, renda: state.renda, va: state.va, gastos: state.gastos }),
   onOpen: async (key, cat) => {
     if (currentTab !== 'orcamento') location.hash = '#monthly';
     if (key !== state.month) await loadMonth(key);
@@ -768,7 +785,7 @@ window.addEventListener('datalife:privacy', () => {
 });
 initVisao({
   userId: user.uid,
-  getLive: () => ({ key: state.month, renda: state.renda, gastos: state.gastos }),
+  getLive: () => ({ key: state.month, renda: state.renda, va: state.va, gastos: state.gastos }),
   getMetas: () => state.metas,
   onOpenMonth: key => {
     location.hash = '#monthly';
