@@ -28,7 +28,14 @@ const PREFIXO = 'v1.';
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+// Em blocos: espalhar o buffer inteiro em fromCharCode estoura a pilha em textos
+// grandes (~125 KB no Chrome, ~64 KB no Safari/iPhone)
+function b64(buf) {
+  const bytes = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
 const deB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
 const estado = { config: undefined, chave: null, uid: null, desligando: false };

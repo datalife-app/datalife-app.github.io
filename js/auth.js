@@ -8,6 +8,7 @@
 import { SDK, auth, provider } from './firebase-init.js';
 import { ALLOWED_EMAILS, LOCAL_MODE } from './config.js';
 import { clearLocalCache } from './db.js';
+import { esquecerAparelho } from './cripto.js';
 import { showToast } from './utils.js';
 
 // Proteção contra clickjacking: CSP frame-ancestors não funciona via <meta> e o
@@ -23,6 +24,7 @@ let fb = null;
 if (!LOCAL_MODE) fb = await import(`${SDK}/firebase-auth.js`);
 
 const NEGADO_KEY = 'datalife:acesso-negado';
+const CACHE_KEY = 'datalife:cache-pendente';
 
 /** Guarda o e-mail recusado para a tela de login explicar o que aconteceu (sobrevive ao redirecionamento). */
 function marcarNegado(email) {
@@ -92,8 +94,8 @@ export async function doLogin() {
 }
 
 export async function doLogout() {
-  // Chave do cadeado do Diário lembrada neste aparelho
-  try { indexedDB.deleteDatabase('datalife-cofre'); } catch { /* ok */ }
+  // Chave do cadeado do Diário lembrada neste aparelho (espera apagar antes de sair da página)
+  await esquecerAparelho();
   // Cache da sessão (avisos com nomes de contas e títulos de datas)
   try { Object.keys(sessionStorage).filter(k => k.startsWith('datalife:')).forEach(k => sessionStorage.removeItem(k)); } catch { /* ok */ }
   if (!LOCAL_MODE) {
@@ -101,10 +103,32 @@ export async function doLogout() {
     try {
       await clearLocalCache();
     } catch (e) {
+      // Outra aba do DataLife aberta segura o cache: a tela de login avisa e tenta de novo
       console.warn('Não foi possível limpar o cache offline:', e);
+      try { sessionStorage.setItem(CACHE_KEY, '1'); } catch { /* ok */ }
     }
   }
   window.location.href = 'index.html';
+}
+
+/** O último logout não conseguiu apagar o cache offline deste navegador? */
+export function cachePendente() {
+  try { return sessionStorage.getItem(CACHE_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * Tenta de novo apagar o cache offline (falha enquanto outra aba do DataLife estiver aberta).
+ * @returns {Promise<boolean>} true se apagou
+ */
+export async function limparCachePendente() {
+  try {
+    await clearLocalCache();
+  } catch (e) {
+    console.warn('Cache offline ainda em uso:', e);
+    return false;
+  }
+  try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ok */ }
+  return true;
 }
 
 /**

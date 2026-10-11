@@ -186,10 +186,11 @@ function renderOrcamento() {
 }
 
 function renderRenda() {
-  $('renda-total').textContent = state.renda ? formatBRL(state.renda) : 'Definir renda';
+  // O VR/VA aparece à parte, fora do total exibido (nas metas ele continua indo para Custos fixos)
+  $('renda-total').textContent = state.renda ? formatBRL(state.renda - state.va) : 'Definir renda';
   $('renda').classList.toggle('is-empty', !state.renda);
   const n = state.rendas.length;
-  $('renda-fontes').textContent = [n > 1 ? `${n} fontes` : '', state.va ? `VA ${formatBRL(state.va)}` : ''].filter(Boolean).join(' · ');
+  $('renda-fontes').textContent = [n > 1 ? `${n} fontes` : '', state.va ? `VR/VA ${formatBRL(state.va)}` : ''].filter(Boolean).join(' · ');
 }
 
 function editRendas() {

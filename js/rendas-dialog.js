@@ -2,8 +2,8 @@
    DataLife — Fontes de renda do mês
    ============================================
    Lista editável (salário, freela, rendimentos...). O total vira a
-   "Renda do mês" usada nas metas. O vale-alimentação (VA/VR) é opcional:
-   soma na renda e vai inteiro para Custos fixos.
+   "Renda do mês" usada nas metas. O vale-alimentação (VR/VA) é opcional:
+   fica fora do total exibido e vai inteiro para Custos fixos.
    Trabalha numa cópia: só grava ao Salvar.
    ============================================ */
 
@@ -42,7 +42,8 @@ function sync() {
 
 function renderTotal() {
   // formatBRL respeita o modo privacidade (os inputs já ficam mascarados pelo CSS)
-  $('rendas-total').textContent = formatBRL(rows.reduce((a, r) => a + r.valor, 0) + parseBRL(vaInput().value));
+  // Sem o VR/VA, como no botão "Renda do mês" do cabeçalho
+  $('rendas-total').textContent = formatBRL(rows.reduce((a, r) => a + r.valor, 0));
 }
 
 function save() {
@@ -63,7 +64,7 @@ export function initRendasDialog() {
   });
   dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
 
-  bindCurrencyInput(vaInput(), () => renderTotal());
+  bindCurrencyInput(vaInput());
 
   $('rendas-add').addEventListener('click', () => {
     sync();

@@ -77,6 +77,7 @@
 .login-alert p { margin: 0; color: var(--text-muted); }
 .login-alert p + p { margin-top: 6px; }
 .login-alert b { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.login-alert .btn { margin-top: 10px; }
 
 .login-note {
   margin-top: 16px;
