@@ -734,6 +734,8 @@ try {
   dadosProntos();
 } catch (e) {
   console.error(e);
-  showToast('Não foi possível carregar seus treinos e anotações. Verifique a conexão e recarregue a página.', 'error', 6000);
+  showToast(e?.code === 'permission-denied'
+    ? 'Sem permissão para ler seus treinos: publique as regras do Firestore.'
+    : 'Não foi possível carregar seus treinos e anotações. Verifique a conexão e recarregue a página.', 'error', 6000);
 }
 renderTudo();
